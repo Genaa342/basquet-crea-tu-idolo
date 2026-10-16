@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>THE ROOKIE | Memoria de Básquet</title>
+
+    <!-- FUENTE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/mini-fit.css">
+    <script src="js/mini-fit.js"></script>
+
+    <style>
+
+        /* =========================
+           RESET
+        ========================= */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Press Start 2P", system-ui, sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #08090d;
+            color: white;
+            overflow-x: hidden;
+        }
+
+
+        /* =========================
+           FONDO THE ROOKIE
+        ========================= */
+
+        .background {
+            position: fixed;
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    rgba(8, 9, 13, 0.88),
+                    rgba(8, 9, 13, 0.98)
+                ),
+                radial-gradient(
+                    circle at 80% 20%,
+                    rgba(255, 120, 20, 0.18),
+                    transparent 35%
+                );
+
+            z-index: -2;
+        }
+
+        .background::after {
+            content: "";
+
+            position: absolute;
+            inset: 0;
+
+            background-image:
+                linear-gradient(
+                    rgba(255,255,255,0.015) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(255,255,255,0.015) 1px,
+                    transparent 1px
+                );
+
+            background-size: 40px 40px;
+
+            opacity: 0.5;
+        }
+
+
+        /* =========================
+           NAVBAR
+        ========================= */
+
+        .navbar {
+            width: 100%;
+            height: 80px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 7%;
+
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+
+            background: rgba(8,9,13,0.85);
+
+            backdrop-filter: blur(12px);
+
+            position: sticky;
+            top: 0;
+
+            z-index: 100;
+        }
+
+
+        /* LOGO */
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+
+            line-height: 0.8;
+        }
+
+        .logo span {
+            font-size: 11px;
+            letter-spacing: 4px;
+            color: #aaa;
+        }
+
+        .logo strong {
+            font-size: 27px;
+            letter-spacing: 1px;
+            color: #ff7518;
+        }
+
+
+        /* NAV */
+
+        nav {
+            display: flex;
+            gap: 35px;
+        }
+
+        nav a {
+            color: #aaa;
+
+            text-decoration: none;
+
+            font-size: 10px;
+            letter-spacing: 1px;
+
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: #ff7518;
+        }
+
+
+        /* USER */
+
+        .user {
+            display: flex;
+            align-items: center;
+
+            gap: 10px;
+
+            font-size: 9px;
+            color: #aaa;
+        }
+
+        .user-icon {
+            width: 35px;
+            height: 35px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border: 1px solid #333;
+
+            border-radius: 50%;
+
+            font-size: 18px;
+        }
+
+
+        /* =========================
+           CONTENEDOR DEL JUEGO
+        ========================= */
+
+        .game-container {
+            min-height: calc(100vh - 80px);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 70px 7%;
+        }
+
+        .game {
+            width: 100%;
+            max-width: 850px;
+
+            text-align: center;
+
+            padding: 50px;
+
+            background: #0d0f14;
+
+            border: 1px solid #272a33;
+
+            box-shadow:
+                0 25px 80px rgba(0,0,0,0.45);
+        }
+
+
+        /* =========================
+           TITULO
+        ========================= */
+
+        .game-subtitle {
+            color: #ff7518;
+
+            font-size: 10px;
+
+            letter-spacing: 3px;
+
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: clamp(25px, 4vw, 42px);
+
+            line-height: 1.3;
+
+            margin-bottom: 30px;
+        }
+
+        h1 span {
+            color: #ff7518;
+        }
+
+
+        /* =========================
+           INFO
+        ========================= */
+
+        .info {
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 15px;
+
+            margin: 25px 0;
+        }
+
+        .info-box {
+            background: #14161d;
+
+            border: 1px solid #272a33;
+
+            padding: 20px;
+
+            transition: 0.3s;
+        }
+
+        .info-box:hover {
+            border-color: #ff7518;
+        }
+
+        .info-label {
+            display: block;
+
+            color: #777;
+
+            font-size: 8px;
+
+            margin-bottom: 12px;
+
+            letter-spacing: 1px;
+        }
+
+        .info-value {
+            color: white;
+
+            font-size: 17px;
+        }
+
+        .info-value.orange {
+            color: #ff7518;
+        }
+
+
+        /* =========================
+           MENSAJE
+        ========================= */
+
+        #message {
+            min-height: 40px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #999;
+
+            font-size: 10px;
+
+            line-height: 1.8;
+
+            margin: 15px 0 25px;
+        }
+
+
+        /* =========================
+           TABLERO
+        ========================= */
+
+        .game-board {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 12px;
+
+            width: 100%;
+
+            margin: 25px auto 30px;
+        }
+
+
+        /* =========================
+           CARTAS
+        ========================= */
+
+        .card {
+            height: 145px;
+
+            perspective: 800px;
+
+            cursor: pointer;
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+
+            position: relative;
+
+            transition:
+                transform 0.45s
+                cubic-bezier(.2,.8,.2,1);
+
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner,
+        .card.matched .card-inner {
+            transform: rotateY(180deg);
+        }
+
+
+        .card-front,
+        .card-back {
+            position: absolute;
+
+            width: 100%;
+            height: 100%;
+
+            backface-visibility: hidden;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border: 2px solid #30333c;
+
+            transition: 0.3s;
+        }
+
+
+        /* PARTE DELANTERA */
+
+        .card-front {
+            background:
+                linear-gradient(
+                    135deg,
+                    #171920,
+                    #0e1015
+                );
+
+            color: #ff7518;
+
+            font-size: 42px;
+
+            box-shadow:
+                inset 0 0 0 1px rgba(255,117,24,0.08);
+        }
+
+        .card-front::after {
+            content: "ROOKIE";
+
+            position: absolute;
+
+            bottom: 12px;
+
+            font-size: 6px;
+
+            letter-spacing: 2px;
+
+            color: #444;
+        }
+
+
+        /* PARTE TRASERA */
+
+        .card-back {
+            background: #f0f0f0;
+
+            color: #111;
+
+            font-size: 42px;
+
+            transform: rotateY(180deg);
+
+            border-color: #ff7518;
+
+            box-shadow:
+                0 0 25px rgba(255,117,24,0.08);
+        }
+
+
+        /* PAREJA ENCONTRADA */
+
+        .matched .card-back {
+            background: #ff7518;
+
+            color: white;
+
+            border-color: #ff9b58;
+
+            box-shadow:
+                0 0 25px rgba(255,117,24,0.35);
+        }
+
+
+        /* HOVER */
+
+        .card:not(.matched):hover .card-front {
+            border-color: #ff7518;
+
+            transform: translateY(-3px);
+
+            box-shadow:
+                0 10px 25px rgba(0,0,0,0.4);
+        }
+
+
+        /* =========================
+           BOTONES
+        ========================= */
+
+        button {
+            border: none;
+
+            background: #ff7518;
+
+            color: white;
+
+            font-family:
+                "Press Start 2P",
+                system-ui,
+                sans-serif;
+
+            font-size: 10px;
+
+            padding: 18px 25px;
+
+            cursor: pointer;
+
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #ff8d42;
+
+            transform: translateY(-3px);
+        }
+
+        #restart {
+            margin-top: 5px;
+        }
+
+
+        /* =========================
+           PANTALLA DE INICIO
+        ========================= */
+
+        #start-screen {
+            position: fixed;
+
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    rgba(8,9,13,0.96),
+                    rgba(8,9,13,0.98)
+                );
+
+            display: flex;
+
+            justify-content: center;
+            align-items: center;
+
+            flex-direction: column;
+
+            z-index: 1000;
+
+            text-align: center;
+
+            padding: 30px;
+        }
+
+
+        #start-screen::before {
+            content: "";
+
+            position: absolute;
+
+            width: 500px;
+            height: 500px;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(255,117,24,0.12),
+                    transparent 65%
+                );
+
+            pointer-events: none;
+        }
+
+
+        .start-content {
+            position: relative;
+
+            max-width: 650px;
+
+            padding: 55px;
+
+            background: #0d0f14;
+
+            border: 1px solid #272a33;
+
+            box-shadow:
+                0 30px 100px rgba(0,0,0,0.6);
+        }
+
+
+        .start-logo {
+            color: #888;
+
+            font-size: 11px;
+
+            letter-spacing: 4px;
+
+            margin-bottom: 25px;
+        }
+
+        .start-logo span {
+            color: #ff7518;
+        }
+
+
+        #start-screen h1 {
+            font-size: clamp(25px, 5vw, 48px);
+
+            line-height: 1.4;
+
+            margin-bottom: 20px;
+        }
+
+        #start-screen h1 span {
+            color: #ff7518;
+        }
+
+
+        #start-screen p {
+            color: #777;
+
+            font-size: 9px;
+
+            line-height: 2;
+
+            margin-bottom: 30px;
+        }
+
+
+        #start-button {
+            font-size: 10px;
+
+            padding: 20px 30px;
+        }
+
+
+        /* =========================
+           FOOTER
+        ========================= */
+
+        footer {
+            padding: 35px 7%;
+
+            border-top: 1px solid #222;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            background: #08090d;
+        }
+
+        footer p {
+            color: #555;
+
+            font-size: 8px;
+
+            letter-spacing: 2px;
+        }
+
+        footer small {
+            color: #444;
+
+            font-size: 7px;
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 900px) {
+
+            nav {
+                display: none;
+            }
+
+            .game {
+                padding: 35px 25px;
+            }
+
+            .card {
+                height: 125px;
+            }
+
+        }
+
+
+        @media (max-width: 600px) {
+
+            .navbar {
+                padding: 0 5%;
+            }
+
+            .user span {
+                display: none;
+            }
+
+            .game-container {
+                padding: 40px 4%;
+            }
+
+            .game {
+                padding: 25px 15px;
+            }
+
+            .info {
+                grid-template-columns: 1fr;
+            }
+
+            .game-board {
+                gap: 8px;
+            }
+
+            .card {
+                height: 85px;
+            }
+
+            .card-front,
+            .card-back {
+                font-size: 27px;
+            }
+
+            .card-front::after {
+                display: none;
+            }
+
+            #message {
+                font-size: 8px;
+            }
+
+            footer {
+                flex-direction: column;
+
+                gap: 15px;
+
+                text-align: center;
+            }
+
+            .start-content {
+                padding: 35px 20px;
+            }
+
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+    <!-- FONDO -->
+    <div class="background"></div>
+
+
+    <!-- =========================
+         NAVBAR
+    ========================= -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            <span>THE</span>
+            <strong>ROOKIE</strong>
+        </div>
+
+        <nav>
+            <a href="página_principal.html#inicio">INICIO</a>
+            <a href="página_principal.html#carrera">CARRERA</a>
+            <a href="página_principal.html#ranking">RANKING</a>
+            <a href="página_principal.html#como-jugar">
+                CÓMO JUGAR
+            </a>
+        </nav>
+
+        <div class="user">
+
+            <div class="user-icon">
+                🏀
+            </div>
+
+            <span>INVITADO</span>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         PANTALLA INICIAL
+    ========================= -->
+
+    <div id="start-screen">
+
+        <div class="start-content">
+
+            <div class="start-logo">
+                THE <span>ROOKIE</span>
+            </div>
+
+            <h1>
+                MEMORIA DE
+                <span>BÁSQUET</span>
+            </h1>
+
+            <p>
+                ENCONTRÁ LAS 8 PAREJAS.<br>
+                TENÉS 5 VIDAS.<br>
+                DEMOSTRÁ TU MEMORIA.
+            </p>
+
+            <button id="start-button">
+                ▶ COMENZAR EL JUEGO
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         JUEGO
+    ========================= -->
+
+    <main class="game-container">
+
+        <div class="game">
+
+            <p class="game-subtitle">
+                ENTRENAMIENTO
+            </p>
+
+            <h1>
+                MEMORIA DE
+                <span>BÁSQUET</span>
+            </h1>
+
+
+            <!-- INFORMACIÓN -->
+
+            <div class="info">
+
+                <div class="info-box">
+
+                    <span class="info-label">
+                        VIDAS
+                    </span>
+
+                    <span
+                        class="info-value"
+                        id="lives">
+                        5
+                    </span>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <span class="info-label">
+                        PAREJAS
+                    </span>
+
+                    <span
+                        class="info-value orange"
+                        id="pairs">
+                        0/8
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- MENSAJE -->
+
+            <p id="message">
+                PRESIONÁ "COMENZAR EL JUEGO"
+            </p>
+
+
+            <!-- TABLERO -->
+
+            <div
+                id="game-board"
+                class="game-board">
+            </div>
+
+
+            <!-- REINICIAR -->
+
+            <button id="restart">
+                🔄 REINICIAR
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================= -->
+
+    <footer>
+
+        <div class="logo">
+
+            <span>THE</span>
+
+            <strong>ROOKIE</strong>
+
+        </div>
+
+        <p>
+            CAMINO A LA LEYENDA
+        </p>
+
+        <small>
+            Proyecto inspirado en el mundo del básquet.
+        </small>
+
+    </footer>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================= -->
+
+    <script>
+
+        const board =
+            document.getElementById("game-board");
+
+        const livesText =
+            document.getElementById("lives");
+
+        const pairsText =
+            document.getElementById("pairs");
+
+        const message =
+            document.getElementById("message");
+
+        const restart =
+            document.getElementById("restart");
+
+        const startScreen =
+            document.getElementById("start-screen");
+
+        const startButton =
+            document.getElementById("start-button");
+
+
+        /* =========================
+           8 PAREJAS
+        ========================= */
+
+        const symbols = [
+
+            "🏀", "🏀",
+
+            "⛹️", "⛹️",
+
+            "🏆", "🏆",
+
+            "🥇", "🥇",
+
+            "👟", "👟",
+
+            "🎽", "🎽",
+
+            "🔥", "🔥",
+
+            "⭐", "⭐"
+
+        ];
+
+
+        let firstCard = null;
+
+        let secondCard = null;
+
+        let lockBoard = true;
+
+        let lives = 5;
+
+        let pairs = 0;
+
+
+        /* =========================
+           MEZCLAR
+        ========================= */
+
+        function shuffle(array) {
+
+            for (
+                let i = array.length - 1;
+                i > 0;
+                i--
+            ) {
+
+                const j =
+                    Math.floor(
+                        Math.random() * (i + 1)
+                    );
+
+                [
+                    array[i],
+                    array[j]
+                ] = [
+                    array[j],
+                    array[i]
+                ];
+
+            }
+
+        }
+
+
+        /* =========================
+           CREAR TABLERO
+        ========================= */
+
+        function createBoard() {
+
+            board.innerHTML = "";
+
+            firstCard = null;
+
+            secondCard = null;
+
+            lockBoard = true;
+
+            lives = 5;
+
+            pairs = 0;
+
+            livesText.textContent = lives;
+
+            pairsText.textContent =
+                pairs + "/8";
+
+            message.textContent =
+                "👀 ¡MEMORIZÁ LAS CARTAS!";
+
+
+            const cards = [...symbols];
+
+            shuffle(cards);
+
+
+            cards.forEach(symbol => {
+
+                const card =
+                    document.createElement("div");
+
+                card.classList.add("card");
+
+
+                card.innerHTML = `
+
+                    <div class="card-inner">
+
+                        <div class="card-front">
+                            🏀
+                        </div>
+
+                        <div class="card-back">
+                            ${symbol}
+                        </div>
+
+                    </div>
+
+                `;
+
+
+                board.appendChild(card);
+
+            });
+
+
+            /* MOSTRAR CARTAS */
+
+            const allCards =
+                document.querySelectorAll(".card");
+
+
+            allCards.forEach(card => {
+
+                card.classList.add("flipped");
+
+            });
+
+
+            /* OCULTAR DESPUÉS DE 1 SEGUNDO */
+
+            setTimeout(() => {
+
+                allCards.forEach(card => {
+
+                    if (
+                        !card.classList.contains("matched")
+                    ) {
+
+                        card.classList.remove(
+                            "flipped"
+                        );
+
+                    }
+
+                });
+
+
+                lockBoard = false;
+
+                message.textContent =
+                    "🧠 ¡ENCONTRÁ TODOS LOS PARES!";
+
+            }, 1000);
+
+        }
+
+
+        /* =========================
+           VOLTEAR CARTA
+        ========================= */
+
+        function flipCard(card) {
+
+            if (lockBoard)
+                return;
+
+            if (card === firstCard)
+                return;
+
+            if (
+                card.classList.contains("matched")
+            )
+                return;
+
+
+            card.classList.add("flipped");
+
+
+            if (!firstCard) {
+
+                firstCard = card;
+
+                return;
+
+            }
+
+
+            secondCard = card;
+
+            lockBoard = true;
+
+            checkMatch();
+
+        }
+
+
+        /* =========================
+           COMPROBAR PAREJA
+        ========================= */
+
+        function checkMatch() {
+
+            const firstSymbol =
+                firstCard
+                    .querySelector(".card-back")
+                    .textContent
+                    .trim();
+
+
+            const secondSymbol =
+                secondCard
+                    .querySelector(".card-back")
+                    .textContent
+                    .trim();
+
+
+            /* PAREJA */
+
+            if (
+                firstSymbol === secondSymbol
+            ) {
+
+                firstCard.classList.add(
+                    "matched"
+                );
+
+                secondCard.classList.add(
+                    "matched"
+                );
+
+
+                pairs++;
+
+
+                pairsText.textContent =
+                    pairs + "/8";
+
+
+                firstCard = null;
+
+                secondCard = null;
+
+                lockBoard = false;
+
+
+                message.textContent =
+                    "✅ ¡PAREJA ENCONTRADA!";
+
+
+                /* GANÓ */
+
+                if (pairs === 8) {
+                    if (window.rookieSumar) rookieSumar("memoria", true);
+                    lockBoard = true;
+
+                    message.textContent =
+                        "🏆 ¡GANASTE! ENCONTRASTE TODAS LAS PAREJAS.";
+
+                }
+
+            }
+
+
+            /* NO ES PAREJA */
+
+            else {
+
+                lives--;
+
+                livesText.textContent =
+                    lives;
+
+
+                message.textContent =
+                    "❌ NO COINCIDEN.";
+
+
+                setTimeout(() => {
+
+                    firstCard.classList.remove(
+                        "flipped"
+                    );
+
+                    secondCard.classList.remove(
+                        "flipped"
+                    );
+
+
+                    firstCard = null;
+
+                    secondCard = null;
+
+
+                    /* GAME OVER */
+
+                    if (lives <= 0) {
+                        if (window.rookieSumar) rookieSumar("memoria", false);
+                        lockBoard = true;
+
+                        message.textContent =
+                            "💥 GAME OVER. TE QUEDASTE SIN VIDAS.";
+
+                    }
+
+                    else {
+
+                        lockBoard = false;
+
+                    }
+
+                }, 800);
+
+            }
+
+        }
+
+
+        /* =========================
+           CLIC EN CARTAS
+        ========================= */
+
+        board.addEventListener(
+            "click",
+            function(e) {
+
+                const card =
+                    e.target.closest(".card");
+
+
+                if (!card)
+                    return;
+
+
+                flipCard(card);
+
+            }
+        );
+
+
+        /* =========================
+           COMENZAR
+        ========================= */
+
+        startButton.addEventListener(
+            "click",
+            function() {
+
+                startScreen.style.display =
+                    "none";
+
+                createBoard();
+
+            }
+        );
+
+
+        /* =========================
+           REINICIAR
+        ========================= */
+
+        restart.addEventListener(
+            "click",
+            function() {
+
+                createBoard();
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>
+
+</body>
+</html>

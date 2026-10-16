@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>location.replace("jugar.php");</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE ROOKIE | Crear Jugador</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- FONDO -->
+    <div class="background"></div>
+
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <div class="logo">
+            <span>THE</span>
+            <strong>ROOKIE</strong>
+        </div>
+
+        <nav>
+            <a href="página_principal.html#inicio">INICIO</a>
+            <a href="página_principal.html#carrera">CARRERA</a>
+            <a href="página_principal.html#ranking">RANKING</a>
+            <a href="página_principal.html#como-jugar">COMO JUGAR</a>
+        </nav>
+
+        <div class="user">
+            <div class="user-icon">🏀</div>
+            <span>INVITADO</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="player-section">
+
+            <div class="player-image">
+                <div class="silhouette">🏀</div>
+            </div>
+
+            <div class="player-info">
+
+                <p class="small-title">TU CARRERA COMIENZA AHORA</p>
+
+                <h2>CREÁ TU<br><span>JUGADOR</span></h2>
+
+                <p>
+                    Elegí tu nombre y tu posición. Tus estadísticas
+                    iniciales van a depender de la posición que elijas.
+                </p>
+
+                <form method="POST" action="guardar_jugador.php">
+
+                    <label for="nombre" class="form-label">NOMBRE</label>
+                    <input
+                        type="text"
+                        id="nombre"
+                        name="nombre"
+                        class="form-input"
+                        maxlength="50"
+                        required
+                    >
+
+                    <p class="form-label" style="margin-top:20px;">POSICIÓN</p>
+
+                    <div class="positions">
+                        <label class="position">
+                            <input type="radio" name="posicion" value="PG" required>
+                            <strong>PG</strong>
+                            <span>BASE</span>
+                        </label>
+                        <label class="position">
+                            <input type="radio" name="posicion" value="SG">
+                            <strong>SG</strong>
+                            <span>ESCOLTA</span>
+                        </label>
+                        <label class="position">
+                            <input type="radio" name="posicion" value="SF">
+                            <strong>SF</strong>
+                            <span>ALERO</span>
+                        </label>
+                        <label class="position">
+                            <input type="radio" name="posicion" value="PF">
+                            <strong>PF</strong>
+                            <span>ALA-PIVOT</span>
+                        </label>
+                        <label class="position">
+                            <input type="radio" name="posicion" value="C">
+                            <strong>C</strong>
+                            <span>PIVOT</span>
+                        </label>
+                    </div>
+
+               <button type="button" class="btn primary" onclick="irAPersonalizacion()">
+    CREAR JUGADOR
+</button>
+                </form>
+
+            </div>
+
+        </section>
+    </main>
+
+</body>
+</html>
+
+
+<script>
+function irAPersonalizacion() {
+
+    const nombre = document.getElementById("nombre").value;
+
+    const posicion =
+        document.querySelector('input[name="posicion"]:checked').value;
+
+    sessionStorage.setItem("nombreJugador", nombre);
+    sessionStorage.setItem("posicionJugador", posicion);
+
+    window.location.href = "crearjugador2.html";
+}
+</script>

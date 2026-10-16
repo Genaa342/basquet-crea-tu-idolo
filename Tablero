@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE ROOKIE | Camino a la Leyenda</title>
+
+    <!-- FUENTE 8-BIT ORIGINAL -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Anton&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --team-primary: #ffc72c;
+            --team-secondary: #1d428a;
+            --team-bg: #0b1120;
+            --card-bg: rgba(16, 26, 48, 0.9);
+            --border-pixel: #ffc72c;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --accent-green: #00ffcc;
+            --accent-gold: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Press Start 2P', monospace;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--team-bg);
+            color: var(--text-main);
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)),
+                radial-gradient(circle at 50% 20%, var(--team-secondary) 0%, #050811 90%);
+            background-attachment: fixed;
+            padding-bottom: 50px;
+        }
+
+        /* BORDES ESTILO RETRO 8-BIT */
+        .pixel-box {
+            background: var(--card-bg);
+            border: 4px solid var(--border-pixel);
+            box-shadow: 4px 4px 0px #000, inset 0 0 10px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            padding: 15px;
+            position: relative;
+        }
+
+        .pixel-btn {
+            background: var(--team-primary);
+            color: #000;
+            border: 3px solid #000;
+            padding: 8px 12px;
+            font-size: 0.6rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #000;
+            transition: all 0.1s;
+        }
+
+        .pixel-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0 #000;
+        }
+
+        .pixel-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 4%;
+            background: #000;
+            border-bottom: 4px solid var(--border-pixel);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 0.9rem;
+            display: flex;
+            gap: 10px;
+        }
+        .logo span { color: #ff3366; }
+        .logo strong { color: var(--accent-green); }
+
+        .navbar nav { display: flex; gap: 20px; }
+        .navbar nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+        }
+        .navbar nav a:hover { color: var(--border-pixel); }
+
+        .user {
+            font-size: 0.6rem;
+            background: #111;
+            padding: 6px 12px;
+            border: 2px solid var(--border-pixel);
+            color: var(--accent-gold);
+        }
+
+        /* CONTENEDOR PRINCIPAL DUB NATION / PLAYER CARD */
+        .dashboard-grid {
+            max-width: 1200px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 20px;
+            padding: 0 15px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        /* HEADER DEL JUGADOR CON FOTO Y OVR */
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: linear-gradient(90deg, var(--team-secondary), transparent);
+            padding: 15px;
+            border-bottom: 3px solid var(--border-pixel);
+            margin-bottom: 15px;
+        }
+
+        .ovr-badge {
+            background: #fff;
+            color: #000;
+            font-size: 2.2rem;
+            padding: 10px 15px;
+            border: 4px solid #000;
+            text-align: center;
+            box-shadow: 4px 4px 0 var(--border-pixel);
+        }
+        .ovr-badge sub { font-size: 0.5rem; display: block; margin-top: 4px; }
+
+        .player-names h2 { font-size: 1.4rem; color: #fff; text-shadow: 3px 3px 0 #000; }
+        .player-names p { font-size: 0.6rem; color: var(--border-pixel); margin-top: 6px; }
+
+        .flag { font-size: 1.2rem; }
+
+        /* EQUIPS SELECTOR */
+        .team-selector {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-end;
+        }
+
+        .team-selector select {
+            background: #000;
+            color: #fff;
+            border: 2px solid var(--border-pixel);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.6rem;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        /* STATS DE PARTIDO (PPG, RPG, APG...) */
+        .game-stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .game-stat-box {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--border-pixel);
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        .game-stat-box label { font-size: 0.45rem; color: var(--text-muted); display: block; margin-bottom: 6px; }
+        .game-stat-box span { font-size: 0.9rem; color: #fff; }
+
+        /* ATRIBUTOS Y MEJORAS */
+        .attributes-section-title {
+            font-size: 0.7rem;
+            color: var(--border-pixel);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stats-upgrade-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #2d3748;
+            padding: 10px;
+        }
+
+        .stat-item-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.55rem;
+            margin-bottom: 6px;
+        }
+
+        .stat-bar-container {
+            height: 12px;
+            background: #111;
+            border: 1px solid #444;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--team-secondary), var(--border-pixel));
+            width: 50%;
+        }
+
+        .stat-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-mini {
+            background: var(--border-pixel);
+            color: #000;
+            border: none;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ESTILO Y HABILIDADES DE JUEGO */
+        .playstyle-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+            border: 2px solid var(--border-pixel);
+            margin-top: 15px;
+        }
+
+        .tag-badge {
+            background: var(--team-secondary);
+            border: 1px solid var(--border-pixel);
+            font-size: 0.45rem;
+            padding: 4px;
+            display: inline-block;
+            margin: 2px;
+            color: #fff;
+        }
+
+        /* VITRINA Y TRAYECTORIA (COLUMNA DERECHA) */
+        .trophy-cabinet {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .trophy-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid var(--border-pixel);
+            padding: 8px;
+        }
+
+        .trophy-icon { font-size: 1.4rem; }
+        .trophy-info strong { font-size: 0.6rem; color: var(--accent-gold); display: block; }
+        .trophy-info small { font-size: 0.45rem; color: var(--text-muted); }
+
+        .timeline-item {
+            border-left: 3px solid var(--border-pixel);
+            padding-left: 10px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '🏀';
+            position: absolute;
+            left: -11px;
+            top: -2px;
+            font-size: 0.6rem;
+        }
+
+        .timeline-item h4 { font-size: 0.55rem; color: #fff; }
+        .timeline-item p { font-size: 0.45rem; color: var(--text-muted); }
+
+        /* JUEGO CANVA INTEGRADO */
+        .game-section {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+        .canvas-container {
+            background: #000;
+            border: 4px solid var(--border-pixel);
+            box-shadow: 6px 6px 0 #000;
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .game-ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            font-size: 0.6rem;
+        }
+
+        .game-ui-box {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid var(--border-pixel);
+            padding: 6px 10px;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 4px solid var(--border-pixel);
+            font-size: 0.5rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <div class="logo">
+            <span>THE</span><strong>ROOKIE</strong>
+        </div>
+        <nav>
+            <a href="#ficha">FICHA JUGADOR</a>
+            <a href="#vitrina">VITRINA</a>
+            <a href="#juego">CANCHA DE TIRO</a>
+        </nav>
+        <div class="user">
+            👤 FRANCO23 | <span id="userXp" style="color:var(--accent-green)">XP: 100</span>
+        </div>
+    </header>
+
+    <!-- DASHBOARD PANEL ESTILO 8-BIT DE LA IMAGEN -->
+    <div class="dashboard-grid" id="ficha">
+        
+        <!-- PANEL IZQUIERDO: FICHA TÉCNICA Y ATRIBUTOS -->
+        <div class="pixel-box">
+            
+            <!-- BANNER DEL JUGADOR -->
+            <div class="player-header">
+                <div class="ovr-badge">
+                    <span id="ovrValue">90</span>
+                    <sub>MEDIA</sub>
+                </div>
+                <div class="player-names">
+                    <h2>FRANCO23 • B <span class="flag">🇦🇷</span></h2>
+                    <p id="teamNameText">GOLDEN STATE WARRIORS</p>
+                    <p style="font-size: 0.45rem; color: #fff; margin-top: 4px;">
+                        BUENOS AIRES, ARGENTINA • 23 AÑOS • 2.01 m • 98 kg
+                    </p>
+                </div>
+
+                <div class="team-selector">
+                    <label style="font-size:0.45rem; color:var(--text-muted);">EQUIPO NBA:</label>
+                    <select id="teamSelect" onchange="changeTeam(this.value)">
+                        <option value="GSW">WARRIORS (GSW)</option>
+                        <option value="LAL">LAKERS (LAL)</option>
+                        <option value="BULLS">BULLS (CHI)</option>
+                        <option value="CELTICS">CELTICS (BOS)</option>
+                        <option value="HEAT">HEAT (MIA)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- PROMEDIOS POR PARTIDO -->
+            <div class="game-stats-row">
+                <div class="game-stat-box">
+                    <label>PTS / PARTIDO</label>
+                    <span style="color: var(--accent-gold)">28.7</span>
+                </div>
+                <div class="game-stat-box">
+                    <label>REBOTES</label>
+                    <span>10.4</span>
+                </div>
+                <div class="game-stat-box">
+                    <label>ASISTENCIAS</label>
+                    <span>8.9</span>
+                </div>
+                <div class="game-stat-box">
+                    <label>ROBOS</label>
+                    <span>2.3</span>
+                </div>
+                <div class="game-stat-box">
+                    <label>TAPONES</label>
+                    <span>1.5</span>
+                </div>
+            </div>
+
+            <!-- MEJORA DE ATRIBUTOS EN TIEMPO REAL -->
+            <div class="attributes-section-title">
+                <span>★ ATRIBUTOS DE JUEGO</span>
+                <span>PUNTOS XP: <strong id="availableXp" style="color:var(--accent-green)">100</strong></span>
+            </div>
+
+            <div class="stats-upgrade-grid">
+                
+                <!-- TIRO -->
+                <div class="stat-item">
+                    <div class="stat-item-header">
+                        <span>🎯 TIRO (POTENCIA)</span>
+                        <strong id="valTiro">89</strong>
+                    </div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-fill" id="barTiro" style="width: 89%;"></div>
+                    </div>
+                    <div class="stat-controls">
+                        <button class="btn-mini" onclick="modStat('Tiro', -1)">-</button>
+                        <span style="font-size:0.45rem;">NIVEL</span>
+                        <button class="btn-mini" onclick="modStat('Tiro', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- VELOCIDAD -->
+                <div class="stat-item">
+                    <div class="stat-item-header">
+                        <span>⚡ VELOCIDAD</span>
+                        <strong id="valVelocidad">86</strong>
+                    </div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-fill" id="barVelocidad" style="width: 86%;"></div>
+                    </div>
+                    <div class="stat-controls">
+                        <button class="btn-mini" onclick="modStat('Velocidad', -1)">-</button>
+                        <span style="font-size:0.45rem;">NIVEL</span>
+                        <button class="btn-mini" onclick="modStat('Velocidad', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- FUERZA -->
+                <div class="stat-item">
+                    <div class="stat-item-header">
+                        <span>🏋️ FUERZA</span>
+                        <strong id="valFuerza">88</strong>
+                    </div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-fill" id="barFuerza" style="width: 88%;"></div>
+                    </div>
+                    <div class="stat-controls">
+                        <button class="btn-mini" onclick="modStat('Fuerza', -1)">-</button>
+                        <span style="font-size:0.45rem;">NIVEL</span>
+                        <button class="btn-mini" onclick="modStat('Fuerza', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- CONTROL / MANEJO -->
+                <div class="stat-item">
+                    <div class="stat-item-header">
+                        <span>🏀 CONTROL</span>
+                        <strong id="valControl">90</strong>
+                    </div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-fill" id="barControl" style="width: 90%;"></div>
+                    </div>
+                    <div class="stat-controls">
+                        <button class="btn-mini" onclick="modStat('Control', -1)">-</button>
+                        <span style="font-size:0.45rem;">NIVEL</span>
+                        <button class="btn-mini" onclick="modStat('Control', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- DEFENSA -->
+                <div class="stat-item">
+                    <div class="stat-item-header">
+                        <span>🛡️ DEFENSA</span>
+                        <strong id="valDefensa">92</strong>
+                    </div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-fill" id="barDefensa" style="width: 92%;"></div>
+                    </div>
+                    <div class="stat-controls">
+                        <button class="btn-mini" onclick="modStat('Defensa', -1)">-</button>
+                        <span style="font-size:0.45rem;">NIVEL</span>
+                        <button class="btn-mini" onclick="modStat('Defensa', 1)">+</button>
+                    </div>
+                </div>
+
+                <!-- SALTO / PARÁBOLA -->
+                <div class="stat-item">
+                    <div class="stat-item-header">
+                        <span>🚀 SALTO</span>
+                        <strong id="valSalto">85</strong>
+                    </div>
+                    <div class="stat-bar-container">
+                        <div class="stat-bar-fill" id="barSalto" style="width: 85%;"></div>
+                    </div>
+                    <div class="stat-controls">
+                        <button class="btn-mini" onclick="modStat('Salto', -1)">-</button>
+                        <span style="font-size:0.45rem;">NIVEL</span>
+                        <button class="btn-mini" onclick="modStat('Salto', 1)">+</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ESTILO Y HABILIDADES ESPECIALES -->
+            <div class="playstyle-box">
+                <div>
+                    <p style="font-size:0.5rem; color:var(--border-pixel); margin-bottom:6px;">¿CÓMO JUEGO?</p>
+                    <span class="tag-badge">BASE / ESCOLTA</span>
+                    <span class="tag-badge">TIRADOR CLAVE</span>
+                    <p style="font-size:0.4rem; color:var(--text-muted); margin-top:6px; line-height:1.4;">
+                        Organizo, creo oportunidades de tiro y visión.
+                    </p>
+                </div>
+                <div>
+                    <p style="font-size:0.5rem; color:var(--border-pixel); margin-bottom:6px;">HABILIDADES ESPECIALES</p>
+                    <span class="tag-badge">🔥 PLAYMAKER</span>
+                    <span class="tag-badge">👑 LÍDER DE EQUIPO</span>
+                    <span class="tag-badge">🔒 DEFENSOR PERIMETRAL</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- PANEL DERECHO: TRAYECTORIA Y VITRINA DE TROFEOS -->
+        <div style="display:flex; flex-direction:column; gap:20px;" id="vitrina">
+            
+            <!-- TRAYECTORIA CARRERA -->
+            <div class="pixel-box">
+                <p style="font-size:0.6rem; color:var(--border-pixel); margin-bottom:15px;">🎓 TRAYECTORIA</p>
+                
+                <div class="timeline-item">
+                    <h4>HARVARD UNIVERSITY</h4>
+                    <p>NCAA | 3 TEMPORADAS (2020 - 2023)</p>
+                </div>
+
+                <div class="timeline-item">
+                    <h4>PHILADELPHIA 76ERS</h4>
+                    <p>NBA | 2 TEMPORADAS (2023 - 2025)</p>
+                </div>
+
+                <div class="timeline-item">
+                    <h4 id="currentTeamTimeline">GOLDEN STATE WARRIORS</h4>
+                    <p>NBA | ACTUALIDAD (2025 - PRESENTE)</p>
+                </div>
+            </div>
+
+            <!-- VITRINA DE TROFEOS -->
+            <div class="pixel-box">
+                <p style="font-size:0.6rem; color:var(--accent-gold); margin-bottom:15px;">🏆 VITRINA DE TROFEOS</p>
+                
+                <div class="trophy-cabinet">
+                    <div class="trophy-item">
+                        <span class="trophy-icon">🏆</span>
+                        <div class="trophy-info">
+                            <strong>x1 CAMPEÓN NBA</strong>
+                            <small>TEMPORADA 2026</small>
+                        </div>
+                    </div>
+
+                    <div class="trophy-item">
+                        <span class="trophy-icon">🥇</span>
+                        <div class="trophy-info">
+                            <strong>x1 MVP DE LAS FINALES</strong>
+                            <small>FINALES 2026</small>
+                        </div>
+                    </div>
+
+                    <div class="trophy-item">
+                        <span class="trophy-icon">⭐</span>
+                        <div class="trophy-info">
+                            <strong>x3 ALL-STAR NBA</strong>
+                            <small>2024 / 2025 / 2026</small>
+                        </div>
+                    </div>
+
+                    <div class="trophy-item">
+                        <span class="trophy-icon">💍</span>
+                        <div class="trophy-info">
+                            <strong>x1 ANILLO DE CAMPEÓN</strong>
+                            <small>EDICIÓN ORO PIXEL</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- SECCIÓN CANCHA DE BASQUET / CANVAS DE JUEGO REAL -->
+    <div class="game-section" id="juego">
+        <div style="text-align:center; margin-bottom:15px;">
+            <p style="font-size:0.6rem; color:var(--accent-green);">ENTRENAMIENTO</p>
+            <h2 style="font-size:1.2rem; color:#fff;">CANCHA DE TIRO LIBRE</h2>
+        </div>
+
+        <div class="canvas-container">
+            <div class="game-ui">
+                <div class="game-ui-box">PTS: <span id="gameScore" style="color:var(--accent-gold)">0</span></div>
+                <div class="game-ui-box">TIEMPO: <span id="gameTimer" style="color:#ff3366">60</span>s</div>
+            </div>
+            <canvas id="gameCanvas" width="500" height="400"></canvas>
+        </div>
+    </div>
+
+    <footer>
+        <p>THE ROOKIE | CAMINO A LA LEYENDA • PIXEL ART BASKETBALL ENGINE</p>
+    </footer>
+
+    <!-- LOGICA DEL JUEGO Y GESTIÓN DE ATRIBUTOS -->
+    <script>
+        // CONFIGURACIÓN DE EQUIPOS Y PALETAS DE COLOR DE LA NBA
+        const teamThemes = {
+            GSW: {
+                primary: '#ffc72c',
+                secondary: '#1d428a',
+                bg: '#0b1120',
+                name: 'GOLDEN STATE WARRIORS'
+            },
+            LAL: {
+                primary: '#fdb927',
+                secondary: '#552583',
+                bg: '#140821',
+                name: 'LOS ANGELES LAKERS'
+            },
+            BULLS: {
+                primary: '#ce1141',
+                secondary: '#000000',
+                bg: '#1c030a',
+                name: 'CHICAGO BULLS'
+            },
+            CELTICS: {
+                primary: '#007a33',
+                secondary: '#ba9653',
+                bg: '#03170c',
+                name: 'BOSTON CELTICS'
+            },
+            HEAT: {
+                primary: '#98002e',
+                secondary: '#f9a01b',
+                bg: '#180209',
+                name: 'MIAMI HEAT'
+            }
+        };
+
+        function changeTeam(teamKey) {
+            const team = teamThemes[teamKey];
+            if (!team) return;
+
+            document.documentElement.style.setProperty('--team-primary', team.primary);
+            document.documentElement.style.setProperty('--team-secondary', team.secondary);
+            document.documentElement.style.setProperty('--team-bg', team.bg);
+            document.documentElement.style.setProperty('--border-pixel', team.primary);
+
+            document.getElementById('teamNameText').textContent = team.name;
+            document.getElementById('currentTeamTimeline').textContent = team.name;
+        }
+
+        // SISTEMA DE ATRIBUTOS
+        let playerStats = {
+            Tiro: 89,
+            Velocidad: 86,
+            Fuerza: 88,
+            Control: 90,
+            Defensa: 92,
+            Salto: 85
+        };
+
+        let availableXp = 100;
+
+        function updateOvr() {
+            const values = Object.values(playerStats);
+            const sum = values.reduce((a, b) => a + b, 0);
+            const avg = Math.round(sum / values.length);
+            document.getElementById('ovrValue').textContent = avg;
+        }
+
+        function modStat(statName, delta) {
+            if (delta > 0 && availableXp >= 10 && playerStats[statName] < 99) {
+                availableXp -= 10;
+                playerStats[statName] += 1;
+            } else if (delta < 0 && playerStats[statName] > 50) {
+                availableXp += 10;
+                playerStats[statName] -= 1;
+            }
+
+            document.getElementById('val' + statName).textContent = playerStats[statName];
+            document.getElementById('bar' + statName).style.width = playerStats[statName] + '%';
+            document.getElementById('availableXp').textContent = availableXp;
+            document.getElementById('userXp').textContent = 'XP: ' + availableXp;
+            updateOvr();
+        }
+
+        // MOTOR FÍSICO Y TIRO DE BALONCESTO EN CANVAS
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let score = 0;
+        let timeLeft = 60;
+        let gameActive = true;
+
+        const ballDefault = { x: 90, y: 310, r: 12 };
+        let ball = { ...ballDefault, vx: 0, vy: 0, isDragging: false, isThrown: false };
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+
+        const hoop = {
+            x: 400,
+            y: 150,
+            w: 34,
+            backboardX: 436,
+            backboardY: 90,
+            backboardH: 80
+        };
+
+        const gravity = 0.38;
+
+        // BUCLE TEMPORIZADOR
+        const timer = setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                document.getElementById('gameTimer').textContent = timeLeft;
+            } else {
+                gameActive = false;
+                clearInterval(timer);
+            }
+        }, 1000);
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function startDrag(e) {
+            if (ball.isThrown || !gameActive) return;
+            const p = getPos(e);
+            if (Math.hypot(p.x - ball.x, p.y - ball.y) < ball.r * 3) {
+                ball.isDragging = true;
+                dragStart = { x: ball.x, y: ball.y };
+                dragCurrent = p;
+            }
+        }
+
+        function moveDrag(e) {
+            if (ball.isDragging) dragCurrent = getPos(e);
+        }
+
+        function endDrag() {
+            if (!ball.isDragging) return;
+            ball.isDragging = false;
+            ball.isThrown = true;
+
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+
+            // POTENCIA MEJORADA
+            const powerFactor = 0.22 + (playerStats.Tiro / 350);
+            const arcFactor = 0.22 + (playerStats.Salto / 400);
+
+            ball.vx = dx * powerFactor;
+            ball.vy = dy * arcFactor;
+        }
+
+        canvas.addEventListener('mousedown', startDrag);
+        canvas.addEventListener('mousemove', moveDrag);
+        window.addEventListener('mouseup', endDrag);
+
+        canvas.addEventListener('touchstart', startDrag);
+        canvas.addEventListener('touchmove', moveDrag);
+        window.addEventListener('touchend', endDrag);
+
+        function resetBall() {
+            ball.x = ballDefault.x + (Math.random() * 30 - 15);
+            ball.y = ballDefault.y;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.isThrown = false;
+            ball.isDragging = false;
+        }
+
+        function update() {
+            if (ball.isThrown) {
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                ball.vy += gravity;
+
+                // REBOTE TABLERO
+                if (ball.x + ball.r >= hoop.backboardX && ball.y >= hoop.backboardY && ball.y <= hoop.backboardY + hoop.backboardH) {
+                    ball.vx = -ball.vx * 0.6;
+                    ball.x = hoop.backboardX - ball.r;
+                }
+
+                // DETECCIÓN DE ANOTACIÓN
+                const hoopCenterX = hoop.x + hoop.w / 2;
+                if (Math.abs(ball.x - hoopCenterX) < hoop.w / 2 && Math.abs(ball.y - hoop.y) < 10 && ball.vy > 0) {
+                    score += 2;
+                    availableXp += 10;
+                    document.getElementById('gameScore').textContent = score;
+                    document.getElementById('availableXp').textContent = availableXp;
+                    document.getElementById('userXp').textContent = 'XP: ' + availableXp;
+                    resetBall();
+                }
+
+                if (ball.y > canvas.height + 20 || ball.x > canvas.width + 20 || ball.x < -20) {
+                    resetBall();
+                }
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Fondo Cancha
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Suelo de Madera
+            ctx.fillStyle = '#92400e';
+            ctx.fillRect(0, 340, canvas.width, 60);
+
+            // Tablero y Aro
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(hoop.backboardX, hoop.backboardY, 8, hoop.backboardH);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(hoop.x, hoop.y, hoop.w, 5);
+
+            // Parábola de Guía
+            if (ball.isDragging) {
+                const dx = dragStart.x - dragCurrent.x;
+                const dy = dragStart.y - dragCurrent.y;
+                const powerFactor = 0.22 + (playerStats.Tiro / 350);
+                const arcFactor = 0.22 + (playerStats.Salto / 400);
+
+                let simX = ball.x;
+                let simY = ball.y;
+                let simVx = dx * powerFactor;
+                let simVy = dy * arcFactor;
+
+                ctx.fillStyle = '#00ffcc';
+                for (let i = 0; i < 30; i++) {
+                    simX += simVx;
+                    simY += simVy;
+                    simVy += gravity;
+                    ctx.fillRect(simX, simY, 3, 3);
+                }
+            }
+
+            // Pelota
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            if (!gameActive) {
+                ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00ffcc';
+                ctx.font = '12px "Press Start 2P"';
+                ctx.textAlign = 'center';
+                ctx.fillText("¡ENTRENAMIENTO FINALIZADO!", canvas.width / 2, 180);
+                ctx.fillText("PUNTOS TOTALES: " + score, canvas.width / 2, 220);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+
+</body>
+</html>

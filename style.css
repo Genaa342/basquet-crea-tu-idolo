@@ -1,0 +1,801 @@
+/* =========================
+   RESET & BASE
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Press Start 2P", system-ui, sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: #08090d;
+    color: white;
+    font-family: "Inter", sans-serif;
+}
+
+
+/* =========================
+   FONDO
+========================= */
+
+.background {
+    position: fixed;
+    inset: 0;
+
+    background:
+        linear-gradient(
+            rgba(8, 9, 13, 0.88),
+            rgba(8, 9, 13, 0.98)
+        ),
+        radial-gradient(
+            circle at 80% 20%,
+            rgba(255, 120, 20, 0.18),
+            transparent 35%
+        );
+
+    z-index: -1;
+}
+
+
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+    width: 100%;
+    height: 80px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 7%;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    background: rgba(8, 9, 13, 0.85);
+    backdrop-filter: blur(12px);
+
+    position: sticky;
+    top: 0;
+
+    z-index: 100;
+}
+
+
+/* LOGO */
+
+.logo {
+    display: flex;
+    flex-direction: column;
+
+    line-height: 0.8;
+}
+
+.logo span {
+    font-size: 11px;
+    letter-spacing: 4px;
+    font-weight: 700;
+}
+
+.logo strong {
+    font-family: "Press Start 2P", sans-serif;
+    font-size: 15px;
+    letter-spacing: 1px;
+}
+
+
+/* NAV */
+
+nav {
+    display: flex;
+    gap: 35px;
+}
+
+nav a {
+    color: #aaa;
+    text-decoration: none;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+
+    transition: 0.3s;
+}
+
+nav a:hover {
+    color: #ff7518;
+}
+
+
+/* USER */
+
+.user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-size: 11px;
+    font-weight: 700;
+    color: #aaa;
+}
+
+.user-icon {
+    width: 35px;
+    height: 35px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #333;
+    border-radius: 50%;
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+    min-height: 650px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 80px 10%;
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+.hero-content {
+    max-width: 650px;
+    z-index: 2;
+}
+
+.small-title {
+    color: #ff7518;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 20px;
+}
+
+.hero h1 {
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: clamp(28px, 4vw, 55px);
+
+    line-height: 1.3;
+
+    letter-spacing: 0px;
+}
+
+.hero h1 span {
+    color: #ff7518;
+    display: block;
+}
+
+.description {
+    color: #aaa;
+
+    max-width: 520px;
+
+    line-height: 1.7;
+
+    margin-top: 30px;
+}
+
+
+/* BUTTONS */
+
+.buttons {
+    display: flex;
+    gap: 15px;
+
+    margin-top: 35px;
+}
+
+.btn {
+    border: none;
+
+    padding: 17px 28px;
+
+    font-family: "Inter", sans-serif;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+    display: inline-block;
+
+    transition: 0.3s;
+}
+
+.primary {
+    background: #ff7518;
+    color: white;
+}
+
+.primary:hover {
+    background: #ff8d42;
+    transform: translateY(-3px);
+}
+
+.secondary {
+    border: 1px solid #444;
+    color: white;
+}
+
+.secondary:hover {
+    border-color: #ff7518;
+    color: #ff7518;
+}
+
+
+/* BALL */
+
+.hero-ball {
+    width: 420px;
+    height: 420px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+}
+
+.ball {
+    font-size: 260px;
+
+    filter:
+        drop-shadow(0 30px 50px rgba(0, 0, 0, 0.8));
+
+    transform: rotate(-15deg);
+
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-15deg);
+    }
+
+    50% {
+        transform: translateY(-20px) rotate(-10deg);
+    }
+}
+
+
+/* =========================
+   SECCIONES (genérico)
+========================= */
+
+section {
+    padding: 100px 10%;
+}
+
+.section-title {
+    margin-bottom: 50px;
+}
+
+.section-title p {
+    color: #ff7518;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 8px;
+}
+
+.section-title h2 {
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: 26px;
+
+    line-height: 1.4;
+
+    letter-spacing: 1px;
+}
+
+
+/* =========================
+   CARRERA
+========================= */
+
+.career {
+    background: #0d0f14;
+}
+
+.career-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 15px;
+}
+
+.career-card {
+    min-height: 300px;
+
+    padding: 30px;
+
+    background: #14161d;
+
+    border: 1px solid #252832;
+
+    position: relative;
+
+    transition: 0.3s;
+}
+
+.career-card:hover {
+    transform: translateY(-8px);
+    border-color: #ff7518;
+}
+
+.career-card.active {
+    border-color: #ff7518;
+}
+
+.number {
+    color: #555;
+
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: 22px;
+}
+
+.card-icon {
+    font-size: 35px;
+
+    margin-top: 25px;
+}
+
+.career-card h3 {
+    margin-top: 15px;
+
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+.career-card p {
+    color: #888;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+
+    margin-top: 10px;
+}
+
+.status {
+    position: absolute;
+
+    bottom: 25px;
+
+    color: #ff7518;
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 2px;
+}
+
+.locked {
+    color: #555;
+}
+
+
+/* =========================
+   CREAR JUGADOR
+========================= */
+
+.player-section {
+    display: flex;
+
+    align-items: center;
+
+    gap: 100px;
+
+    min-height: 600px;
+}
+
+.player-image {
+    width: 45%;
+    height: 500px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        linear-gradient(
+            135deg,
+            #161920,
+            #090a0d
+        );
+
+    border: 1px solid #272a33;
+
+    overflow: hidden;
+}
+
+.silhouette {
+    font-size: 220px;
+
+    opacity: 0.7;
+
+    filter: grayscale(1);
+}
+
+.player-info {
+    max-width: 500px;
+}
+
+.player-info h2 {
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: 30px;
+
+    line-height: 1.4;
+
+    margin-bottom: 25px;
+}
+
+.player-info h2 span {
+    color: #ff7518;
+}
+
+.player-info p {
+    color: #888;
+
+    line-height: 1.7;
+
+    margin-bottom: 30px;
+}
+
+
+/* POSITIONS */
+
+.positions {
+    display: flex;
+
+    gap: 8px;
+
+    margin-bottom: 30px;
+}
+
+.position {
+    width: 70px;
+    height: 70px;
+
+    border: 1px solid #30333c;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.position strong {
+    font-size: 20px;
+}
+
+.position span {
+    font-size: 7px;
+
+    color: #777;
+
+    margin-top: 5px;
+}
+
+.position:hover {
+    background: #ff7518;
+    border-color: #ff7518;
+}
+
+.position:hover span {
+    color: white;
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+.stats-section {
+    background: #0d0f14;
+}
+
+.stats-container {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 30px 60px;
+
+    max-width: 900px;
+}
+
+.stat-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    font-size: 12px;
+
+    margin-bottom: 8px;
+}
+
+.stat-header strong {
+    color: #ff7518;
+}
+
+.bar {
+    height: 5px;
+
+    background: #242630;
+}
+
+.bar div {
+    height: 100%;
+
+    background: #ff7518;
+}
+
+
+/* =========================
+   RANKING
+========================= */
+
+.ranking {
+    max-width: 1200px;
+
+    margin: auto;
+}
+
+.ranking-table {
+    border: 1px solid #272a33;
+}
+
+.ranking-header,
+.ranking-row {
+    display: grid;
+
+    grid-template-columns:
+        70px 1fr 100px 100px;
+
+    align-items: center;
+
+    padding: 20px 25px;
+}
+
+.ranking-header {
+    background: #15171e;
+
+    color: #666;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 2px;
+}
+
+.ranking-row {
+    border-top: 1px solid #22252d;
+
+    color: #999;
+}
+
+.ranking-row strong {
+    color: white;
+}
+
+.ranking-row b {
+    color: #ff7518;
+
+    font-size: 20px;
+}
+
+
+/* =========================
+   COMO JUGAR
+========================= */
+
+.how {
+    background: #0d0f14;
+}
+
+.steps {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 20px;
+}
+
+.step {
+    padding: 30px;
+
+    border-left: 2px solid #333;
+
+    transition: 0.3s;
+}
+
+.step:hover {
+    border-color: #ff7518;
+}
+
+.step span {
+    color: #ff7518;
+
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: 20px;
+}
+
+.step h3 {
+    margin: 15px 0 10px;
+
+    font-family: "Press Start 2P", sans-serif;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+.step p {
+    color: #777;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+footer {
+    padding: 60px 10%;
+
+    border-top: 1px solid #222;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+footer p {
+    color: #555;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+}
+
+footer small {
+    color: #444;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+
+    nav {
+        display: none;
+    }
+
+    .hero {
+        padding: 70px 7%;
+    }
+
+    .hero-ball {
+        display: none;
+    }
+
+    .career-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .player-section {
+        flex-direction: column;
+
+        gap: 50px;
+    }
+
+    .player-image {
+        width: 100%;
+    }
+
+    .steps {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .career-grid,
+    .stats-container,
+    .steps {
+        grid-template-columns: 1fr;
+    }
+
+    .hero h1 {
+        font-size: 18px;
+    }
+
+    .player-info h2 {
+        font-size: 20px;
+    }
+
+    .positions {
+        flex-wrap: wrap;
+    }
+
+    .ranking-header,
+    .ranking-row {
+        grid-template-columns:
+            40px 1fr 50px 50px;
+
+        padding: 15px;
+    }
+
+    footer {
+        flex-direction: column;
+
+        gap: 20px;
+
+        text-align: center;
+    }
+
+}

@@ -1,0 +1,54 @@
+/* =========================
+   FORMULARIO CREAR JUGADOR
+========================= */
+
+.form-label {
+    font-size: 11px;
+    color: #aaa;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+
+    background: #14161d;
+    border: 1px solid #272a33;
+    color: white;
+
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #ff7518;
+}
+
+/* Radios ocultos, se usa el label .position como botón visual */
+.position input {
+    display: none;
+}
+
+.position:has(input:checked) {
+    background: #ff7518;
+    border-color: #ff7518;
+}
+
+.position:has(input:checked) span {
+    color: white;
+}
+
+/* Mensajes de error */
+.form-error {
+    color: #ff5555;
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+/* Pantalla de resultado (stats del jugador creado) */
+.result-stats {
+    margin-top: 20px;
+}

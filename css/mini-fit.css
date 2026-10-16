@@ -1,0 +1,74 @@
+html.mini-fit,
+html.mini-fit body {
+    height: 100dvh;
+    overflow: hidden;
+    background: #071633;
+}
+
+html.mini-fit .navbar,
+html.mini-fit footer,
+html.mini-fit nav {
+    display: none !important;
+}
+
+html.mini-fit .mini-volver {
+    position: fixed;
+    z-index: 50;
+    top: 8px;
+    left: 8px;
+    padding: 10px 12px;
+    border: 3px solid #e8b923;
+    background: #071633;
+    color: #e8b923;
+    font-family: "Press Start 2P", monospace;
+    font-size: 8px;
+    text-decoration: none;
+}
+
+html.mini-fit main,
+html.mini-fit .game-wrapper,
+html.mini-fit .game-container,
+html.mini-fit .contenedor {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding: 52px 12px 12px !important;
+    box-sizing: border-box;
+}
+
+html.mini-fit h1 {
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+    margin: 0 0 8px !important;
+}
+
+html.mini-fit .subtitle,
+html.mini-fit .game-subtitle,
+html.mini-fit .subtitulo {
+    display: none !important;
+}
+
+html.mini-fit .board,
+html.mini-fit .game-board {
+    margin: 8px auto !important;
+    max-width: 420px;
+}
+
+html.mini-fit .card {
+    height: calc((100dvh - 230px) / 4) !important;
+    min-height: 52px;
+}
+
+html.mini-fit .color-button {
+    aspect-ratio: 1 / 1;
+    max-height: 18dvh;
+}
+
+html.mini-fit #cancha {
+    height: calc(100dvh - 250px) !important;
+    aspect-ratio: auto !important;
+}
+
+html.mini-fit .section-title {
+    margin-bottom: 8px !important;
+}

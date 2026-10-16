@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>location.replace("jugar.php");</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>THE ROOKIE | Personalizar Jugador</title>
+
+    <!-- FUENTE PIXEL -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        /* =========================================
+           GENERAL
+        ========================================= */
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #08090d;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        .background {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+
+            background:
+                radial-gradient(
+                    circle at 50% 20%,
+                    rgba(255,117,24,.18),
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    #08090d,
+                    #101219 50%,
+                    #08090d
+                );
+        }
+
+
+        /* =========================================
+           NAVBAR
+        ========================================= */
+
+        .navbar {
+            height: 80px;
+            width: 100%;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 6%;
+
+            background: rgba(8,9,13,.88);
+
+            border-bottom: 1px solid #272a33;
+
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
+
+        .logo span {
+            font-family: "Press Start 2P";
+            font-size: 10px;
+            color: #888;
+        }
+
+        .logo strong {
+            font-family: "Press Start 2P";
+            font-size: 22px;
+            color: #ff7518;
+        }
+
+        nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            color: #aaa;
+            text-decoration: none;
+
+            font-family: "Press Start 2P";
+            font-size: 9px;
+
+            transition: .2s;
+        }
+
+        nav a:hover {
+            color: #ff7518;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            font-family: "Press Start 2P";
+            font-size: 8px;
+
+            color: #888;
+        }
+
+        .user-icon {
+            width: 36px;
+            height: 36px;
+
+            border: 1px solid #ff7518;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 50%;
+        }
+
+
+        /* =========================================
+           CONTENIDO
+        ========================================= */
+
+        main {
+            width: 100%;
+            padding: 70px 6%;
+        }
+
+        .creator {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .small-title {
+            color: #ff7518;
+
+            font-family: "Press Start 2P";
+            font-size: 10px;
+
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-family: "Press Start 2P";
+
+            font-size: clamp(28px, 5vw, 55px);
+
+            line-height: 1.3;
+
+            margin-bottom: 20px;
+        }
+
+        h1 span {
+            color: #ff7518;
+        }
+
+        .subtitle {
+            color: #888;
+
+            max-width: 700px;
+
+            line-height: 1.7;
+
+            margin-bottom: 45px;
+        }
+
+
+        /* =========================================
+           GRID PRINCIPAL
+        ========================================= */
+
+        .creator-grid {
+            display: grid;
+
+            grid-template-columns: 380px 1fr;
+
+            gap: 35px;
+        }
+
+
+        /* =========================================
+           VISTA PREVIA
+        ========================================= */
+
+        .player-preview {
+            background: #14161d;
+
+            border: 1px solid #272a33;
+
+            min-height: 600px;
+
+            display: flex;
+            flex-direction: column;
+
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+
+            overflow: hidden;
+        }
+
+        .player-preview::before {
+            content: "";
+
+            position: absolute;
+
+            width: 400px;
+            height: 400px;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(255,117,24,.12),
+                    transparent 65%
+                );
+
+            pointer-events: none;
+        }
+
+        .preview-title {
+            position: absolute;
+
+            top: 22px;
+            left: 22px;
+
+            font-family: "Press Start 2P";
+            font-size: 9px;
+
+            color: #ff7518;
+        }
+
+
+        /* =========================================
+           JUGADOR PIXEL ART
+        ========================================= */
+
+        .player {
+            position: relative;
+
+            width: 260px;
+            height: 450px;
+
+            margin-top: 25px;
+
+            image-rendering: pixelated;
+        }
+
+
+        /* CABEZA */
+
+        .head {
+            position: absolute;
+
+            width: 92px;
+            height: 105px;
+
+            left: 84px;
+            top: 42px;
+
+            background: #a96f48;
+
+            border: 6px solid #08090d;
+
+            border-radius: 8px;
+
+            z-index: 3;
+        }
+
+
+        /* PELO */
+
+        .hair {
+            position: absolute;
+
+            width: 102px;
+            height: 63px;
+
+            left: 79px;
+            top: 30px;
+
+            z-index: 6;
+
+            pointer-events: none;
+        }
+
+        .hair.style1 {
+            background: #17120f;
+
+            border-radius: 8px 8px 2px 2px;
+
+            border: 5px solid #08090d;
+        }
+
+        .hair.style2 {
+            background: #4a2818;
+
+            border-radius: 20px 8px 5px 15px;
+
+            border: 5px solid #08090d;
+
+            transform: rotate(-4deg);
+        }
+
+        .hair.style3 {
+            background: #d49a55;
+
+            border-radius: 15px;
+
+           
+
+            box-shadow:
+                12px -8px 0 #d49a55,
+                25px -7px 0 #d49a55,
+                18px -4px 0 #d49a55;
+        }
+
+        .hair.style4 {
+            background: #090909;
+
+            width: 130px;
+            height: 80px;
+
+            left: 73px;
+            top: 20px;
+
+            border-radius: 25px;
+
+            border: 5px solid #08090d;
+        }
+
+
+        /* OJOS */
+
+        .eyes {
+            position: absolute;
+
+            top: 55px;
+            left: 18px;
+
+            display: flex;
+
+            gap: 31px;
+        }
+
+        .eye {
+            width: 9px;
+            height: 9px;
+
+            background: #08090d;
+
+            border-radius: 1px;
+        }
+
+
+        /* BOCA */
+
+        .mouth {
+            position: absolute;
+
+            width: 25px;
+            height: 7px;
+
+            left: 29px;
+            top: 78px;
+
+            border-bottom: 4px solid #08090d;
+        }
+
+
+        /* CUELLO */
+
+        .neck {
+            position: absolute;
+
+            width: 35px;
+            height: 35px;
+
+            left: 113px;
+            top: 132px;
+
+            background: #a96f48;
+
+            border: 5px solid #08090d;
+
+            z-index: 1;
+        }
+
+
+        /* =========================================
+           CAMISETA
+        ========================================= */
+
+        .body-player {
+            position: absolute;
+
+            width: 135px;
+            height: 145px;
+
+            left: 62px;
+            top: 150px;
+
+            background: #ff7518;
+
+            border: 6px solid #08090d;
+
+            border-radius: 10px;
+
+            z-index: 2;
+        }
+
+        .shirt-neck {
+            position: absolute;
+
+            width: 40px;
+            height: 20px;
+
+            left: 41px;
+            top: -6px;
+
+            background: #08090d;
+
+            clip-path: polygon(
+                0 0,
+                100% 0,
+                75% 100%,
+                25% 100%
+            );
+        }
+
+        .shirt-number {
+            position: absolute;
+
+            top: 45px;
+            left: 37px;
+
+            font-family: "Press Start 2P";
+
+            font-size: 27px;
+
+            color: white;
+
+            text-shadow:
+                3px 3px 0 #08090d;
+        }
+
+
+        /* =========================================
+           BRAZOS
+        ========================================= */
+
+        .arm {
+            position: absolute;
+
+            width: 38px;
+            height: 115px;
+
+            background: #a96f48;
+
+            border: 6px solid #08090d;
+
+            border-radius: 8px;
+
+            top: 155px;
+
+            z-index: 1;
+        }
+
+        .arm.left {
+            left: 35px;
+
+            transform: rotate(18deg);
+        }
+
+        .arm.right {
+            right: 30px;
+
+            height: 105px;
+
+            transform: rotate(-42deg);
+        }
+
+
+        /* =========================================
+           PELOTA DE BÁSQUET
+        ========================================= */
+
+        .basketball-preview {
+            position: absolute;
+
+            width: 62px;
+            height: 62px;
+
+            right: 2px;
+            top: 215px;
+
+            background: #c95c16;
+
+            border: 5px solid #08090d;
+
+            border-radius: 50%;
+
+            z-index: 5;
+
+            box-shadow:
+                4px 4px 0 #08090d;
+        }
+
+        .ball-line {
+            position: absolute;
+
+            background: #08090d;
+        }
+
+        .line1 {
+            width: 5px;
+            height: 55px;
+
+            left: 25px;
+            top: -1px;
+
+            transform: rotate(25deg);
+        }
+
+        .line2 {
+            width: 55px;
+            height: 5px;
+
+            left: 0;
+            top: 26px;
+
+            transform: rotate(-35deg);
+        }
+
+        .line3 {
+            width: 45px;
+            height: 5px;
+
+            left: 8px;
+            top: 8px;
+
+            transform: rotate(65deg);
+        }
+
+
+        /* =========================================
+           SHORT
+        ========================================= */
+
+        .shorts {
+            position: absolute;
+
+            width: 140px;
+            height: 70px;
+
+            left: 59px;
+            top: 286px;
+
+            background: #15171e;
+
+            border: 6px solid #08090d;
+
+            z-index: 3;
+        }
+
+        .shorts::after {
+            content: "";
+
+            position: absolute;
+
+            width: 5px;
+            height: 60px;
+
+            background: #08090d;
+
+            left: 64px;
+            top: 0;
+        }
+
+
+        /* =========================================
+           PIERNAS
+        ========================================= */
+
+        .leg {
+            position: absolute;
+
+            width: 45px;
+            height: 90px;
+
+            background: #a96f48;
+
+            border: 6px solid #08090d;
+
+            top: 345px;
+
+            z-index: 2;
+        }
+
+        .leg.left {
+            left: 78px;
+        }
+
+        .leg.right {
+            right: 78px;
+        }
+
+
+        /* =========================================
+           ZAPATILLAS
+        ========================================= */
+
+        .shoe {
+            position: absolute;
+
+            width: 67px;
+            height: 32px;
+
+            background: #e8e8e8;
+
+            border: 6px solid #08090d;
+
+            border-radius: 5px;
+
+            top: 410px;
+
+            z-index: 4;
+        }
+
+        .shoe.left {
+            left: 55px;
+        }
+
+        .shoe.right {
+            right: 55px;
+        }
+
+
+        /* =========================================
+           NOMBRE Y POSICIÓN
+        ========================================= */
+
+        .player-name {
+            font-family: "Press Start 2P";
+
+            color: white;
+
+            font-size: 12px;
+
+            margin-top: 10px;
+
+            text-align: center;
+
+            max-width: 300px;
+
+            word-break: break-word;
+        }
+
+        .player-position {
+            font-family: "Press Start 2P";
+
+            color: #ff7518;
+
+            font-size: 9px;
+
+            margin-top: 12px;
+
+            text-align: center;
+        }
+
+
+        /* =========================================
+           PANEL DE OPCIONES
+        ========================================= */
+
+        .options {
+            background: #14161d;
+
+            border: 1px solid #272a33;
+
+            padding: 30px;
+        }
+
+        .option-section {
+            margin-bottom: 35px;
+        }
+
+        .option-title {
+            font-family: "Press Start 2P";
+
+            font-size: 11px;
+
+            color: white;
+
+            margin-bottom: 20px;
+        }
+
+        .option-title span {
+            color: #ff7518;
+        }
+
+
+        /* =========================================
+           DATOS CARGADOS
+        ========================================= */
+
+        .loaded-data {
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 15px;
+
+            margin-bottom: 30px;
+        }
+
+        .data-box {
+            background: #0d0f14;
+
+            border: 1px solid #272a33;
+
+            padding: 18px;
+        }
+
+        .data-label {
+            font-family: "Press Start 2P";
+
+            font-size: 7px;
+
+            color: #777;
+
+            margin-bottom: 10px;
+        }
+
+        .data-value {
+            font-family: "Press Start 2P";
+
+            font-size: 12px;
+
+            color: #ff7518;
+
+            word-break: break-word;
+        }
+
+
+        /* =========================================
+           TEZ
+        ========================================= */
+
+        .skin-options {
+            display: grid;
+
+            grid-template-columns: repeat(4, 1fr);
+
+            gap: 15px;
+        }
+
+        .skin {
+            height: 80px;
+
+            border: 2px solid #272a33;
+
+            background: #0d0f14;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            cursor: pointer;
+
+            transition: .2s;
+        }
+
+        .skin:hover {
+            border-color: #ff7518;
+
+            transform: translateY(-2px);
+        }
+
+        .skin.selected {
+            border-color: #ff7518;
+
+            box-shadow:
+                0 0 0 2px rgba(255,117,24,.25);
+        }
+
+        .skin-color {
+            width: 48px;
+            height: 48px;
+
+            border-radius: 50%;
+
+            border: 4px solid #08090d;
+        }
+
+        .skin1 {
+            background: #6f432b;
+        }
+
+        .skin2 {
+            background: #a96f48;
+        }
+
+        .skin3 {
+            background: #d39468;
+        }
+
+        .skin4 {
+            background: #efbd91;
+        }
+
+
+        /* =========================================
+           CABELLO
+        ========================================= */
+
+        .hair-options {
+            display: grid;
+
+            grid-template-columns: repeat(4, 1fr);
+
+            gap: 15px;
+        }
+
+        .hair-option {
+            height: 125px;
+
+            border: 2px solid #272a33;
+
+            background: #0d0f14;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            cursor: pointer;
+
+            transition: .2s;
+        }
+
+        .hair-option:hover {
+            border-color: #ff7518;
+
+            transform: translateY(-2px);
+        }
+
+        .hair-option.selected {
+            border-color: #ff7518;
+
+            box-shadow:
+                0 0 0 2px rgba(255,117,24,.25);
+        }
+
+        .hair-preview {
+            width: 65px;
+            height: 50px;
+
+            margin-bottom: 12px;
+        }
+
+        .hair-preview.h1 {
+            background: #17120f;
+
+            border: 4px solid #08090d;
+
+            border-radius: 8px 8px 2px 2px;
+        }
+
+        .hair-preview.h2 {
+            background: #4a2818;
+
+            border: 4px solid #08090d;
+
+            border-radius: 60% 30% 20% 50%;
+
+            transform: rotate(-5deg);
+        }
+
+        .hair-preview.h3 {
+            background: #d49a55;
+
+            border: 4px solid #08090d;
+
+            border-radius: 50%;
+        }
+
+        .hair-preview.h4 {
+            background: #090909;
+
+            border: 4px solid #08090d;
+
+            border-radius: 50%;
+
+            width: 75px;
+            height: 60px;
+        }
+
+        .hair-name {
+            font-family: "Press Start 2P";
+
+            font-size: 7px;
+
+            color: #888;
+        }
+
+
+        /* =========================================
+           BOTONES
+        ========================================= */
+
+        .buttons {
+            display: flex;
+
+            gap: 15px;
+
+            margin-top: 30px;
+        }
+
+        button {
+            border: none;
+
+            cursor: pointer;
+
+            font-family: "Press Start 2P";
+
+            font-size: 9px;
+
+            padding: 18px 25px;
+
+            transition: .2s;
+        }
+
+        .primary {
+            background: #ff7518;
+
+            color: white;
+        }
+
+        .primary:hover {
+            background: #ff8d42;
+
+            transform: translateY(-2px);
+        }
+
+        .secondary {
+            background: transparent;
+
+            border: 1px solid #272a33;
+
+            color: #888;
+        }
+
+        .secondary:hover {
+            border-color: #ff7518;
+
+            color: #ff7518;
+        }
+
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @media (max-width: 900px) {
+
+            .navbar {
+                padding: 0 4%;
+            }
+
+            nav {
+                display: none;
+            }
+
+            main {
+                padding: 45px 5%;
+            }
+
+            .creator-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .player-preview {
+                min-height: 600px;
+            }
+        }
+
+
+        @media (max-width: 550px) {
+
+            h1 {
+                font-size: 25px;
+            }
+
+            .options {
+                padding: 20px;
+            }
+
+            .skin-options,
+            .hair-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .loaded-data {
+                grid-template-columns: 1fr;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .user span {
+                display: none;
+            }
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+    <div class="background"></div>
+
+
+    <!-- =========================================
+         NAVBAR
+    ========================================= -->
+
+    <header class="navbar">
+
+        <div class="logo">
+
+            <span>THE</span>
+
+            <strong>ROOKIE</strong>
+
+        </div>
+
+
+        <nav>
+
+            <a href="página_principal.html#inicio">
+                INICIO
+            </a>
+
+            <a href="página_principal.html#carrera">
+                CARRERA
+            </a>
+
+            <a href="página_principal.html#ranking">
+                RANKING
+            </a>
+
+            <a href="página_principal.html#como-jugar">
+                COMO JUGAR
+            </a>
+
+        </nav>
+
+
+        <div class="user">
+
+            <div class="user-icon">
+                🏀
+            </div>
+
+            <span>
+                INVITADO
+            </span>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =========================================
+         CONTENIDO
+    ========================================= -->
+
+    <main>
+
+        <section class="creator">
+
+
+            <p class="small-title">
+                PERSONALIZACIÓN // JUGADOR
+            </p>
+
+
+            <h1>
+                CREÁ TU<br>
+                <span>JUGADOR</span>
+            </h1>
+
+
+            <p class="subtitle">
+                Personalizá la apariencia de tu jugador antes de comenzar
+                tu camino hacia la leyenda.
+            </p>
+
+
+
+            <div class="creator-grid">
+
+
+                <!-- =================================
+                     VISTA PREVIA
+                ================================= -->
+
+                <div class="player-preview">
+
+                    <div class="preview-title">
+                        VISTA PREVIA
+                    </div>
+
+
+                    <div class="player">
+
+
+                        <!-- PELO -->
+
+                        <div
+                            class="hair style1"
+                            id="playerHair">
+                        </div>
+
+
+                        <!-- CABEZA -->
+
+                        <div
+                            class="head"
+                            id="playerHead">
+
+                            <div class="eyes">
+
+                                <div class="eye"></div>
+
+                                <div class="eye"></div>
+
+                            </div>
+
+
+                            <div class="mouth"></div>
+
+                        </div>
+
+
+                        <!-- CUELLO -->
+
+                        <div
+                            class="neck"
+                            id="playerNeck">
+                        </div>
+
+
+                        <!-- BRAZOS -->
+
+                        <div
+                            class="arm left"
+                            id="leftArm">
+                        </div>
+
+                        <div
+                            class="arm right"
+                            id="rightArm">
+                        </div>
+
+
+                        <!-- PELOTA -->
+
+                        <div class="basketball-preview">
+
+                            <div class="ball-line line1"></div>
+
+                            <div class="ball-line line2"></div>
+
+                            <div class="ball-line line3"></div>
+
+                        </div>
+
+
+                        <!-- CAMISETA -->
+
+                        <div class="body-player">
+
+                            <div class="shirt-neck"></div>
+
+                            <div class="shirt-number">
+                                00
+                            </div>
+
+                        </div>
+
+
+                        <!-- SHORT -->
+
+                        <div class="shorts"></div>
+
+
+                        <!-- PIERNAS -->
+
+                        <div
+                            class="leg left"
+                            id="leftLeg">
+                        </div>
+
+                        <div
+                            class="leg right"
+                            id="rightLeg">
+                        </div>
+
+
+                        <!-- ZAPATILLAS -->
+
+                        <div class="shoe left"></div>
+
+                        <div class="shoe right"></div>
+
+                    </div>
+
+
+                    <!-- NOMBRE -->
+
+                    <div
+                        class="player-name"
+                        id="previewName">
+
+                        ROOKIE
+
+                    </div>
+
+
+                    <!-- POSICIÓN -->
+
+                    <div
+                        class="player-position"
+                        id="previewPosition">
+
+                        PG // BASE
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================
+                     OPCIONES
+                ================================= -->
+
+                <div class="options">
+
+
+                    <!-- DATOS -->
+
+                    <div class="option-section">
+
+                        <div class="option-title">
+
+                            DATOS DEL
+                            <span>JUGADOR</span>
+
+                        </div>
+
+
+                        <div class="loaded-data">
+
+
+                            <div class="data-box">
+
+                                <div class="data-label">
+                                    NOMBRE
+                                </div>
+
+                                <div
+                                    class="data-value"
+                                    id="loadedName">
+
+                                    ROOKIE
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="data-box">
+
+                                <div class="data-label">
+                                    POSICIÓN
+                                </div>
+
+                                <div
+                                    class="data-value"
+                                    id="loadedPosition">
+
+                                    PG
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- =================================
+                         TEZ
+                    ================================= -->
+
+                    <div class="option-section">
+
+                        <div class="option-title">
+
+                            SELECCIONÁ TU
+                            <span>TEZ</span>
+
+                        </div>
+
+
+                        <div class="skin-options">
+
+
+                            <div
+                                class="skin selected"
+                                data-skin="#6f432b">
+
+                                <div
+                                    class="skin-color skin1">
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="skin"
+                                data-skin="#a96f48">
+
+                                <div
+                                    class="skin-color skin2">
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="skin"
+                                data-skin="#d39468">
+
+                                <div
+                                    class="skin-color skin3">
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="skin"
+                                data-skin="#efbd91">
+
+                                <div
+                                    class="skin-color skin4">
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- =================================
+                         CABELLO
+                    ================================= -->
+
+                    <div class="option-section">
+
+                        <div class="option-title">
+
+                            ELEGÍ TU
+                            <span>CABELLO</span>
+
+                        </div>
+
+
+                        <div class="hair-options">
+
+
+                            <div
+                                class="hair-option selected"
+                                data-hair="style1">
+
+                                <div
+                                    class="hair-preview h1">
+                                </div>
+
+                                <div class="hair-name">
+                                    CLÁSICO
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="hair-option"
+                                data-hair="style2">
+
+                                <div
+                                    class="hair-preview h2">
+                                </div>
+
+                                <div class="hair-name">
+                                    ONDULADO
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="hair-option"
+                                data-hair="style3">
+
+                                <div
+                                    class="hair-preview h3">
+                                </div>
+
+                                <div class="hair-name">
+                                    RIZADO
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="hair-option"
+                                data-hair="style4">
+
+                                <div
+                                    class="hair-preview h4">
+                                </div>
+
+                                <div class="hair-name">
+                                    AFRO
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- =================================
+                         BOTONES
+                    ================================= -->
+
+                    <div class="buttons">
+
+
+                        <button
+                            class="secondary"
+                            onclick="volver()">
+
+                            VOLVER
+
+                        </button>
+
+
+                        <button
+                            class="primary"
+                            onclick="guardarJugador()">
+
+                            CONFIRMAR JUGADOR
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================================
+         JAVASCRIPT
+    ========================================= -->
+
+    <script>
+
+        /* =====================================
+           RECUPERAR DATOS ANTERIORES
+        ===================================== */
+
+        let nombre =
+            sessionStorage.getItem("nombreJugador");
+
+        let posicion =
+            sessionStorage.getItem("posicionJugador");
+
+
+        /*
+            Si todavía no existen datos,
+            usamos valores predeterminados.
+        */
+
+        if (!nombre || nombre.trim() === "") {
+
+            nombre = "ROOKIE";
+
+        }
+
+
+        if (!posicion) {
+
+            posicion = "PG";
+
+        }
+
+
+        /* =====================================
+           POSICIONES
+        ===================================== */
+
+        const posiciones = {
+
+            PG: "BASE",
+
+            SG: "ESCOLTA",
+
+            SF: "ALERO",
+
+            PF: "ALA-PIVOT",
+
+            C: "PIVOT"
+
+        };
+
+
+        /* =====================================
+           MOSTRAR NOMBRE
+        ===================================== */
+
+        document.getElementById(
+            "loadedName"
+        ).textContent =
+            nombre.toUpperCase();
+
+
+        document.getElementById(
+            "previewName"
+        ).textContent =
+            nombre.toUpperCase();
+
+
+        /* =====================================
+           MOSTRAR POSICIÓN
+        ===================================== */
+
+        document.getElementById(
+            "loadedPosition"
+        ).textContent =
+            posicion;
+
+
+        document.getElementById(
+            "previewPosition"
+        ).textContent =
+            posicion +
+            " // " +
+            (posiciones[posicion] || "JUGADOR");
+
+
+        /* =====================================
+           ELEMENTOS DEL PERSONAJE
+        ===================================== */
+
+        const cabeza =
+            document.getElementById("playerHead");
+
+        const cuello =
+            document.getElementById("playerNeck");
+
+        const brazoIzquierdo =
+            document.getElementById("leftArm");
+
+        const brazoDerecho =
+            document.getElementById("rightArm");
+
+        const piernaIzquierda =
+            document.getElementById("leftLeg");
+
+        const piernaDerecha =
+            document.getElementById("rightLeg");
+
+
+        /* =====================================
+           SELECCIÓN DE TEZ
+        ===================================== */
+
+        const skinOptions =
+            document.querySelectorAll(".skin");
+
+
+        skinOptions.forEach(option => {
+
+            option.addEventListener(
+                "click",
+                function() {
+
+
+                    /* Quitar selección */
+
+                    skinOptions.forEach(item => {
+
+                        item.classList.remove(
+                            "selected"
+                        );
+
+                    });
+
+
+                    /* Seleccionar */
+
+                    this.classList.add(
+                        "selected"
+                    );
+
+
+                    /* Obtener color */
+
+                    const skin =
+                        this.dataset.skin;
+
+
+                    /* Cambiar cabeza */
+
+                    cabeza.style.background =
+                        skin;
+
+
+                    /* Cambiar cuello */
+
+                    cuello.style.background =
+                        skin;
+
+
+                    /* Cambiar brazos */
+
+                    brazoIzquierdo.style.background =
+                        skin;
+
+                    brazoDerecho.style.background =
+                        skin;
+
+
+                    /* Cambiar piernas */
+
+                    piernaIzquierda.style.background =
+                        skin;
+
+                    piernaDerecha.style.background =
+                        skin;
+
+                }
+
+            );
+
+        });
+
+
+        /* =====================================
+           SELECCIÓN DE CABELLO
+        ===================================== */
+
+        const hairOptions =
+            document.querySelectorAll(".hair-option");
+
+
+        hairOptions.forEach(option => {
+
+            option.addEventListener(
+                "click",
+                function() {
+
+
+                    /* Quitar selección */
+
+                    hairOptions.forEach(item => {
+
+                        item.classList.remove(
+                            "selected"
+                        );
+
+                    });
+
+
+                    /* Seleccionar */
+
+                    this.classList.add(
+                        "selected"
+                    );
+
+
+                    /* Obtener estilo */
+
+                    const hair =
+                        this.dataset.hair;
+
+
+                    /* Cambiar cabello */
+
+                    const playerHair =
+                        document.getElementById(
+                            "playerHair"
+                        );
+
+
+                    playerHair.className =
+                        "hair " + hair;
+
+                }
+
+            );
+
+        });
+
+
+        /* =====================================
+           GUARDAR JUGADOR
+        ===================================== */
+
+        function guardarJugador() {
+
+
+            /* Obtener tez */
+
+            const selectedSkin =
+                document.querySelector(
+                    ".skin.selected"
+                ).dataset.skin;
+
+
+            /* Obtener cabello */
+
+            const selectedHair =
+                document.querySelector(
+                    ".hair-option.selected"
+                ).dataset.hair;
+
+
+            /* Guardar nombre */
+
+            sessionStorage.setItem(
+                "nombreJugador",
+                nombre
+            );
+
+
+            /* Guardar posición */
+
+            sessionStorage.setItem(
+                "posicionJugador",
+                posicion
+            );
+
+
+            /* Guardar tez */
+
+            sessionStorage.setItem(
+                "tezJugador",
+                selectedSkin
+            );
+
+
+            /* Guardar cabello */
+
+            sessionStorage.setItem(
+                "cabelloJugador",
+                selectedHair
+            );
+
+
+            /*
+                Guardamos también un objeto completo
+                del jugador.
+            */
+
+            const jugador = {
+
+                nombre: nombre,
+
+                posicion: posicion,
+
+                tez: selectedSkin,
+
+                cabello: selectedHair
+
+            };
+
+
+            sessionStorage.setItem(
+                "jugador",
+                JSON.stringify(jugador)
+            );
+
+
+            /*
+                Siguiente pantalla.
+            */
+
+            window.location.href =
+                "carrera.html";
+
+        }
+
+
+        /* =====================================
+           VOLVER
+        ===================================== */
+
+        function volver() {
+
+            window.location.href =
+                "página_principal.html";
+
+        }
+
+    </script>
+
+</body>
+</html>
