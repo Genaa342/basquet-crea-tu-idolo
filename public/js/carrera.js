@@ -55,6 +55,7 @@ function asegurarCarrera() {
     c.usados = c.usados || [];
     c.jugados = c.jugados || [];
     c.historial = c.historial || [];
+    c.rivalesSerie = c.rivalesSerie || {};
     c.xp = Number(c.xp) || 0;
     c.forma = c.forma == null ? 70 : Number(c.forma);
     c.momento = c.momento || 0;
@@ -227,18 +228,96 @@ function armarOpciones(lado) {
     ]);
 }
 
+const PISO_MARCADOR = 50;
+const PUNTOS_JUGADA = 15;
+
 function firmaPartido() {
     const c = state.carrera;
     return (c.paso || "") + ":" + (c.momento || 0) + ":" + (state.temporada || 1);
 }
 
+function tramoRival() {
+    const c = state.carrera || {};
+    if (c.paso === "debut") return "debut";
+    return "temp-" + (state.temporada || 1);
+}
+
+function esAperturaPartido() {
+    const c = state.carrera || {};
+    return (c.paso === "debut" && Number(c.momento) === 2) || (c.paso === "temporada" && Number(c.momento) === 1);
+}
+
+function esCierrePartido() {
+    const c = state.carrera || {};
+    return (c.paso === "debut" && Number(c.momento) === 4) || (c.paso === "temporada" && Number(c.momento) === 4);
+}
+
+function rondaTemporada() {
+    const c = state.carrera || {};
+    const momento = Number(c.momento) || 0;
+    if (c.paso !== "temporada" || momento < 1 || momento > 4) return 0;
+    return momento;
+}
+
+function nombreRonda(momento) {
+    return ["", "PRIMERA RONDA", "SEMIFINALES", "FINAL DE CONFERENCIA", "FINALES DEL MUNDO"][Number(momento)] || "";
+}
+
+function anotarRivalApertura(id) {
+    if (!esAperturaPartido() || !id) return;
+    const c = asegurarCarrera();
+    c.rivalesApertura = c.rivalesApertura || {};
+    c.rivalesApertura[tramoRival()] = Number(id);
+}
+
+function serieRivales() {
+    const c = asegurarCarrera();
+    c.rivalesSerie = c.rivalesSerie || {};
+    const clave = tramoRival();
+    if (!c.rivalesSerie[clave]) c.rivalesSerie[clave] = [];
+    return c.rivalesSerie[clave];
+}
+
+function anotarRivalSerie(id) {
+    if (!rondaTemporada() || !id) return;
+    const lista = serieRivales();
+    const n = Number(id);
+    if (lista.indexOf(n) === -1) lista.push(n);
+}
+
+function candidatosRonda(liga, mio, ronda, usados) {
+    const misma = liga.filter((eq) => String(eq.conferencia) === String(mio.conferencia));
+    const contraria = liga.filter((eq) => String(eq.conferencia) !== String(mio.conferencia));
+    const base = ronda < 4 ? misma : contraria;
+    const frescos = base.filter((eq) => usados.indexOf(Number(eq.id)) === -1);
+    if (frescos.length) return frescos;
+    const resto = liga.filter((eq) => usados.indexOf(Number(eq.id)) === -1);
+    return resto.length ? resto : (base.length ? base : liga);
+}
+
 function rivalDelPartido() {
     const mio = typeof equipoActual === "function" ? equipoActual() : null;
-    if (!mio || typeof clubPorId !== "function" || typeof elegirRival !== "function") return null;
-    const actual = state.rivalClubId ? clubPorId(state.rivalClubId) : null;
-    if (actual && actual.liga === mio.liga && Number(actual.id) !== Number(mio.id)) return actual;
-    const rival = elegirRival();
-    state.rivalClubId = rival ? Number(rival.id) : null;
+    if (!mio) return null;
+    const liga = (equipos || []).filter((eq) => eq.liga === mio.liga && Number(eq.id) !== Number(mio.id));
+    if (!liga.length) return null;
+    const c = asegurarCarrera();
+    const ronda = rondaTemporada();
+    if (ronda) {
+        const candidatos = candidatosRonda(liga, mio, ronda, serieRivales().map(Number));
+        const rival = candidatos[Math.floor(Math.random() * candidatos.length)];
+        if (rival) anotarRivalSerie(rival.id);
+        anotarRivalApertura(rival && rival.id);
+        return rival;
+    }
+    c.rivalesApertura = c.rivalesApertura || {};
+    const vetado = esCierrePartido() ? Number(c.rivalesApertura[tramoRival()]) : 0;
+    let candidatos = liga;
+    if (vetado) {
+        const sinEse = liga.filter((eq) => Number(eq.id) !== vetado);
+        if (sinEse.length) candidatos = sinEse;
+    }
+    const rival = candidatos[Math.floor(Math.random() * candidatos.length)];
+    anotarRivalApertura(rival.id);
     return rival;
 }
 
@@ -261,27 +340,35 @@ function relatoJugada(stat, gano, lado) {
     return pool[Math.floor(Math.random() * pool.length)];
 }
 
+function nuevaPosesion(lado) {
+    const pool = SITUACIONES_CARRERA[lado];
+    const sit = pool[Math.floor(Math.random() * pool.length)];
+    return { t: sit.t, d: sit.d, lado: lado, opciones: armarOpciones(lado) };
+}
+
 function asegurarPartido() {
     const c = asegurarCarrera();
     const firma = firmaPartido();
     if (c.partido && c.partido.firma === firma && c.partido.posesiones && c.partido.indice < c.partido.posesiones.length) {
-        if (c.partido.nuestros == null) c.partido.nuestros = (c.partido.aciertos || 0) * 2;
-        if (c.partido.ellos == null) c.partido.ellos = (c.partido.fallos || 0) * 2;
+        if (c.partido.nuestros == null) c.partido.nuestros = PISO_MARCADOR + (c.partido.aciertos || 0) * PUNTOS_JUGADA;
+        if (c.partido.ellos == null) c.partido.ellos = PISO_MARCADOR + (c.partido.fallos || 0) * PUNTOS_JUGADA;
+        if ((c.partido.nuestros || 0) < PISO_MARCADOR) c.partido.nuestros = PISO_MARCADOR;
+        if ((c.partido.ellos || 0) < PISO_MARCADOR) c.partido.ellos = PISO_MARCADOR;
         if (!c.partido.rivalId) {
             const rival = rivalDelPartido();
             c.partido.rivalId = rival ? Number(rival.id) : null;
         }
+        anotarRivalApertura(c.partido.rivalId);
+        anotarRivalSerie(c.partido.rivalId);
         return c.partido;
     }
-    const final = c.paso === "temporada" && c.momento === 2;
+    const final = c.paso === "temporada" && Number(c.momento) === 4;
     const rival = rivalDelPartido();
     const total = c.paso === "debut" ? 3 : (final ? 5 : 4);
     const posesiones = [];
     for (let i = 0; i < total; i++) {
         const lado = i === 0 ? "ataque" : (i === 1 ? "defensa" : (Math.random() < 0.55 ? "ataque" : "defensa"));
-        const pool = SITUACIONES_CARRERA[lado];
-        const sit = pool[Math.floor(Math.random() * pool.length)];
-        posesiones.push({ t: sit.t, d: sit.d, lado: lado, opciones: armarOpciones(lado) });
+        posesiones.push(nuevaPosesion(lado));
     }
     c.partido = {
         firma: firma,
@@ -291,8 +378,8 @@ function asegurarPartido() {
         fallos: 0,
         final: final,
         lineas: [],
-        nuestros: 0,
-        ellos: 0,
+        nuestros: PISO_MARCADOR,
+        ellos: PISO_MARCADOR,
         eco: null,
         rivalId: rival ? Number(rival.id) : null,
         grlInicio: grlCarrera(),
@@ -315,7 +402,7 @@ function eventoActualCarrera() {
     } else if (c.momento === 0) {
         evento = { tipo: "personal", ev: elegirEvento(personales(), "p") };
     } else {
-        evento = { tipo: "partido", ev: { t: "PARTIDO", d: "Varias posesiones. En cada una elegís.", partido: true }, final: c.momento === 2 };
+        evento = { tipo: "partido", ev: { t: nombreRonda(c.momento) || "PARTIDO", d: "Varias posesiones. En cada una elegís.", partido: true }, final: Number(c.momento) === 4 };
     }
     evento.momento = c.momento;
     evento.temporada = state.temporada;
@@ -439,8 +526,8 @@ function resolverPosesion(indice) {
     const sube = gano ? 3 : 1;
     subirCampo(op.stat, sube);
     reflejarCalibre();
-    const ptsNos = gano ? (2 + Math.floor(Math.random() * 2)) : 0;
-    const ptsEllos = gano ? 0 : 2;
+    const ptsNos = gano ? PUNTOS_JUGADA : 0;
+    const ptsEllos = gano ? 0 : PUNTOS_JUGADA;
     p.nuestros = (p.nuestros || 0) + ptsNos;
     p.ellos = (p.ellos || 0) + ptsEllos;
     state.puntosCarrera = (state.puntosCarrera || 0) + ptsNos;
@@ -461,6 +548,27 @@ function resolverPosesion(indice) {
     };
 }
 
+function sigueOvertime(p) {
+    return !!p && p.indice + 1 >= p.posesiones.length && (p.nuestros || 0) === (p.ellos || 0);
+}
+
+function abrirOvertime() {
+    const p = asegurarCarrera().partido;
+    if (!p) return;
+    p.overtimes = (Number(p.overtimes) || 0) + 1;
+    p.lineas.push("Overtime " + p.overtimes + ".");
+    p.posesiones.push(nuevaPosesion("ataque"));
+    p.posesiones.push(nuevaPosesion("defensa"));
+}
+
+function etiquetaPartido(p) {
+    if (p.overtimes && p.indice >= p.posesiones.length - 2) {
+        const n = Math.min(2, p.indice - (p.posesiones.length - 2) + 1);
+        return "OVERTIME " + p.overtimes + " · " + n + "/2";
+    }
+    return (p.indice + 1) + "/" + p.posesiones.length;
+}
+
 function seguirJugada() {
     const c = asegurarCarrera();
     const p = c.partido;
@@ -474,13 +582,20 @@ function cerrarPartido() {
     const c = asegurarCarrera();
     const p = c.partido;
     if (!p) return;
+    p.nuestros = Math.max(PISO_MARCADOR, Number(p.nuestros) || 0);
+    p.ellos = Math.max(PISO_MARCADOR, Number(p.ellos) || 0);
+    if ((p.nuestros || 0) === (p.ellos || 0)) {
+        abrirOvertime();
+        return;
+    }
     const gano = (p.nuestros || 0) > (p.ellos || 0);
-    const empate = (p.nuestros || 0) === (p.ellos || 0);
     const marcador = (p.nuestros || 0) + "-" + (p.ellos || 0);
     const delta = grlCarrera() - (Number(p.grlInicio) || grlCarrera());
     const extra = delta > 0 ? " (+" + delta + ")" : "";
     const pend = p.paso === "debut" ? (p.momento < 4 ? "debut" : "draftnba") : "avanzar";
     const eraFinal = !!p.final;
+    const ot = Number(p.overtimes) || 0;
+    const textoOt = ot ? " Overtime" + (ot > 1 ? "s: " + ot + "." : ".") : "";
     state.partidos = (state.partidos || 0) + 1;
     state.partidas = (state.partidas || 0) + 1;
     c.forma = clamp(c.forma - (6 + Math.random() * 6), 0, 100);
@@ -501,18 +616,13 @@ function cerrarPartido() {
             }
         }
         titulo = eraFinal ? "Campeones" : "Ganaron";
-        detalle = "Cerraron " + marcador + ". Media " + grlCarrera() + extra + ". +" + xp + " XP." + (eraFinal ? " Título de liga." : "");
+        detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". +" + xp + " XP." + (eraFinal ? " Título de liga." : "");
         tipo = "bien";
-    } else if (empate) {
-        c.xp += 4;
-        titulo = "Empate";
-        detalle = "Empataron " + marcador + ". Media " + grlCarrera() + extra + ". +4 XP.";
-        tipo = "neutro";
     } else {
         c.xp += 3;
         sumarHinchada(-4);
         titulo = "Derrota";
-        detalle = "Cerraron " + marcador + ". Media " + grlCarrera() + extra + ". La cancha igual te hizo subir.";
+        detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". La cancha igual te hizo subir.";
         tipo = "mal";
     }
     const cierre = {
@@ -572,7 +682,7 @@ function seguirResultado() {
             c.momento = 0;
         }
     } else if (pend === "avanzar") {
-        if (c.momento < 2) {
+        if (c.momento < 4) {
             c.momento += 1;
             c.paso = "temporada";
         } else {
@@ -763,20 +873,26 @@ function htmlMarcador(nuestros, ellos, rivalId) {
 function pantallaEco(p) {
     const eco = p.eco;
     const ultima = p.indice + 1 >= p.posesiones.length;
+    const alargue = sigueOvertime(p);
     const clase = eco.ok ? "eco-ok" : "eco-mal";
-    return marcoCarrera("EN JUEGO · " + (p.indice + 1) + "/" + p.posesiones.length, `
-        <p class="en-juego">EN JUEGO</p>
+    const aviso = alargue
+        ? `<p class="nota">${p.overtimes ? "Siguen empatados. Otro overtime: dos jugadas más." : "Empate. Overtime: dos jugadas más."}</p>`
+        : "";
+    const boton = alargue ? "Overtime" : (ultima ? "Ver el cierre" : "Siguiente jugada");
+    return marcoCarrera("EN JUEGO · " + etiquetaPartido(p), `
+        <p class="en-juego">${p.overtimes ? "OVERTIME" : "EN JUEGO"}</p>
         ${htmlMarcador(p.nuestros || 0, p.ellos || 0, p.rivalId)}
         <div class="resultado-jugada ${clase}">
             <b>${esc(eco.titulo)}</b>
             <p>Elegiste ${esc(eco.jugada)}. ${esc(eco.texto)}</p>
         </div>
+        ${aviso}
         <div class="caja">
             <div class="statline"><span>${esc(eco.stat.split(" ")[0])}</span><b>${esc(eco.stat)}</b></div>
             <div class="statline"><span>Chance</span><b class="num">${eco.chance}%</b></div>
             <div class="statline"><span>Tablero</span><b class="num">${p.nuestros || 0} - ${p.ellos || 0}</b></div>
         </div>
-    `, `<button class="btn" data-mc="seguir-jugada">${ultima ? "Ver el cierre" : "Siguiente jugada"}</button>`);
+    `, `<button class="btn" data-mc="seguir-jugada">${boton}</button>`);
 }
 
 function pantallaPartido() {
@@ -789,12 +905,20 @@ function pantallaPartido() {
         const extra = `<span class="sub">${esc(nombreStat(op.stat))} ${valorStat(op.stat)} · ${probCarrera(op.stat)}%</span>`;
         return `<button class="btn ${i === 0 ? "" : "ghost"}" data-mc="posesion" data-i="${i}">${esc(op.t)}${extra}</button>`;
     }).join("");
-    const marca = p.paso === "debut" && c.evento && c.evento.ev ? c.evento.ev.t : (p.final ? "FINAL" : "PARTIDO");
-    return marcoCarrera("EN JUEGO · " + marca + " · " + (p.indice + 1) + "/" + p.posesiones.length, `
-        <p class="en-juego">${p.final ? "FINAL" : "EN JUEGO"}</p>
+    const enOt = p.overtimes && p.indice >= p.posesiones.length - 2;
+    const ronda = p.paso === "temporada" ? nombreRonda(p.momento) : "";
+    const marca = enOt ? ("OVERTIME " + p.overtimes) : (ronda || (p.paso === "debut" && c.evento && c.evento.ev ? c.evento.ev.t : (p.final ? "FINAL" : "PARTIDO")));
+    const leadOt = enOt && p.indice === p.posesiones.length - 2
+        ? (p.overtimes > 1 ? "Siguen empatados. " : "Empate. ") + "Overtime: dos jugadas para definir."
+        : "";
+    const leadRonda = !enOt && ronda && p.indice === 0
+        ? (Number(p.momento) === 4 ? "Finales del mundo. El rival es de la otra conferencia. " : "El rival es de tu conferencia. ")
+        : "";
+    return marcoCarrera("EN JUEGO · " + marca + " · " + (ronda ? Number(p.momento) + "/4 · " : "") + etiquetaPartido(p), `
+        <p class="en-juego">${enOt ? "OVERTIME" : (ronda || (p.final ? "FINAL" : "EN JUEGO"))}</p>
         ${htmlMarcador(p.nuestros || 0, p.ellos || 0, p.rivalId)}
         <h1>${esc(pos.t)}</h1>
-        <p class="lead">${esc(pos.d)} La chance sale de tu stat.</p>
+        <p class="lead">${leadOt ? esc(leadOt) : ""}${leadRonda ? esc(leadRonda) : ""}${esc(pos.d)} La chance sale de tu stat.</p>
     `, ops);
 }
 

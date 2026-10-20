@@ -12,7 +12,7 @@
 </head>
 <body>
     <div id="app"></div>
-    <script src="/js/carrera.js?v=4"></script>
+    <script src="/js/carrera.js?v=7"></script>
     <script src="/js/app.js?v=23"></script>
 </body>
 </html>
