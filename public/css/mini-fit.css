@@ -11,6 +11,25 @@ html.mini-fit body {
     -ms-overflow-style: none;
 }
 
+html.mini-fit body {
+    background:
+        linear-gradient(180deg, rgba(2, 4, 12, 0.55), rgba(2, 4, 12, 0.82)),
+        url("/assets/fondo-calle.jpg?v=2") center center / cover no-repeat,
+        #02040c;
+}
+
+html.mini-fit body.mini-libre {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    max-height: none;
+    overflow: auto;
+    padding: 56px 12px 16px;
+    background: #0b0f24;
+}
+
 html.mini-fit * {
     scrollbar-width: none;
 }

@@ -11,7 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/mini-fit.css?v=8">
-    <script src="js/mini-fit.js?v=5"></script>
+    <link rel="stylesheet" href="css/mini-shell.css?v=3">
+    <script src="js/mini-fit.js?v=8"></script>
 
     <style>
 
@@ -863,7 +864,7 @@
             <!-- REINICIAR -->
 
             <button id="restart">
-                🔄 REINICIAR
+                CONTINUAR
             </button>
 
         </div>
@@ -1304,7 +1305,8 @@
             "click",
             function() {
 
-                createBoard();
+                if (window.rookieContinuar) window.rookieContinuar();
+                else createBoard();
 
             }
         );

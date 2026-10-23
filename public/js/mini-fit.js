@@ -6,23 +6,36 @@
     var enCurso = false;
 
     window.rookieSumar = function (juego, gano, extra) {
-        localStorage.setItem("rookie-recompensa", JSON.stringify({
+        var premio = {
             id: juego + "-" + Date.now(),
             juego: juego,
             gano: !!gano,
             extra: extra || null
-        }));
+        };
+        var lista = [];
+        try { lista = JSON.parse(localStorage.getItem("rookie-recompensas") || "[]"); } catch (error) { lista = []; }
+        if (!Array.isArray(lista)) lista = [];
+        lista.push(premio);
+        localStorage.setItem("rookie-recompensas", JSON.stringify(lista));
+        localStorage.setItem("rookie-recompensa", JSON.stringify(premio));
     };
 
     window.rookieMarcar = function (activo) {
         enCurso = !!activo;
     };
 
+    function modoActual() {
+        var modo = new URLSearchParams(location.search).get("modo");
+        if (modo === "partido" || modo === "carrera" || modo === "entreno") return modo;
+        return "entreno";
+    }
+
     function modoPartido() {
-        return new URLSearchParams(location.search).get("modo") === "partido";
+        return modoActual() === "partido";
     }
 
     function destino() {
+        if (location.pathname.indexOf("/minijuegos/") !== -1) return "/";
         return (location.pathname.indexOf("/reflejos/") !== -1 ? "../" : "") + "jugar.php";
     }
 
@@ -30,6 +43,10 @@
         enCurso = false;
         location.href = destino();
     }
+
+    window.rookieContinuar = function () {
+        irAlLobby();
+    };
 
     function preguntar() {
         var capa = document.querySelector(".mini-salir");

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tiro al aro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/mini-fit.css?v=9">
+<link rel="stylesheet" href="/css/mini-shell.css?v=3">
+<script src="/js/mini-fit.js?v=8"></script>
+<style>
+  body { margin: 0; }
+  #juego { --ptj-accent: #d0d0d0; --ptj-ink: #d0d0d0; }
+</style>
+</head>
+<body class="mini-libre mini-shell">
+  <header class="mini-top">THE ROOKIE <span>TIRO</span></header>
+  <div class="mini-stage">
+    <div id="juego"></div>
+  </div>
+  <p class="mini-ayuda">Espacio o clic cuando la marca pase por la zona verde. La meta es 20 puntos.</p>
+  <script type="module">
+    import potreroTiros from "./potrero-tiros.js?v=2";
+    const META = 20;
+    potreroTiros(document.getElementById("juego"), {
+      duration: 30,
+      layout: "wide",
+      text: {
+        title: "TIRO AL ARO",
+        help: "Tocá cuando la marca pase por la zona verde. La meta del entreno es 20 puntos.",
+        helpWide: "Espacio o clic cuando la marca pase por la zona verde. La meta del entreno es 20 puntos.",
+        play: "Jugar",
+        again: "Continuar",
+        over: "LISTO",
+        points: "Puntos",
+        rank: "Rango",
+        best: "Récord",
+        newBest: "¡Nuevo récord!"
+      },
+      onStart() {
+        if (window.rookieMarcar) window.rookieMarcar(true);
+      },
+      onContinue() {
+        if (window.rookieContinuar) window.rookieContinuar();
+      },
+      onFinish(resultado) {
+        if (window.rookieMarcar) window.rookieMarcar(false);
+        const cumplido = resultado.score >= META;
+        const linea = document.querySelector("#juego .ptj-ov .b");
+        if (linea) {
+          linea.textContent = (cumplido ? "Entrenamiento cumplido. " : "La meta es 20 puntos. ") + linea.textContent;
+        }
+        if (window.rookieSumar) window.rookieSumar("tiro", cumplido, { puntos: resultado.score, encestes: resultado.makes });
+      }
+    });
+  </script>
+</body>
+</html>

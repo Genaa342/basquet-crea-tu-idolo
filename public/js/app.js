@@ -1,9 +1,9 @@
 const BASES = {
-    PG: { velocidad: 80, tiro: 65, fuerza: 40, control: 85, defensa: 60 },
-    SG: { velocidad: 75, tiro: 85, fuerza: 45, control: 60, defensa: 55 },
-    SF: { velocidad: 70, tiro: 70, fuerza: 60, control: 55, defensa: 65 },
-    PF: { velocidad: 55, tiro: 55, fuerza: 80, control: 45, defensa: 70 },
-    C:  { velocidad: 45, tiro: 45, fuerza: 90, control: 35, defensa: 80 }
+    PG: { velocidad: 48, tiro: 36, fuerza: 30, control: 50, defensa: 34 },
+    SG: { velocidad: 44, tiro: 48, fuerza: 32, control: 36, defensa: 34 },
+    SF: { velocidad: 42, tiro: 40, fuerza: 40, control: 34, defensa: 42 },
+    PF: { velocidad: 34, tiro: 32, fuerza: 50, control: 30, defensa: 44 },
+    C:  { velocidad: 28, tiro: 30, fuerza: 52, control: 26, defensa: 48 }
 };
 
 const POSICIONES = {
@@ -139,6 +139,8 @@ function estadoInicial() {
         notaPrevia: "",
         ligaMercado: "NCAA",
         confirmarCierre: false,
+        revision: 0,
+        crecimiento: { edad: 19, usado: 0 },
         carrera: null,
         cuenta: { google: false, user: null, jugadores: [], historial: { carreras: 0, partidas: 0, partidos: 0, victorias: 0 } }
     };
@@ -239,7 +241,7 @@ function coloresMarca(eq) {
 
 function marcaLogo(eq) {
     if (!eq) {
-        return `<div class="logo-circulo"><b class="monograma" style="background:#2a2a2e;color:#f4f4f4">ARO</b></div>`;
+        return `<div class="logo-circulo"><b class="monograma calle">CALLE</b></div>`;
     }
     if (eq.logo) {
         return `<div class="logo-circulo"><img src="${esc(eq.logo)}" alt=""></div>`;
@@ -295,6 +297,12 @@ function ovr() {
     return Math.round((s.tiro + s.velocidad + s.fuerza + s.control + s.defensa) / 5);
 }
 
+function numerosVisibles() {
+    if (!(state.partidos > 0)) return `<p class="nota">Sin partidos todavía. Los promedios aparecen cuando jugás.</p>`;
+    const box = boxScore();
+    return `<p class="nums">${box.ppg}<small>PTS</small> ${box.reb}<small>REB</small> ${box.ast}<small>AST</small></p>`;
+}
+
 function boxScore() {
     const s = state.stats || BASES.PG;
     return {
@@ -310,8 +318,10 @@ function rol() {
     const media = ovr();
     if (media >= 90) return ["ESTRELLA PRINCIPAL", "Líder en la cancha, genera juego para todos."];
     if (media >= 80) return ["TITULAR", "Ya sos parte del quinteto. El equipo cuenta con vos."];
-    if (media >= 72) return ["ROTACION", "Entrás desde el banco y cambiás el ritmo."];
-    return ["PROSPECTO", "Recién llegado. Cada entrenamiento suma."];
+    if (media >= 74) return ["ROTACION", "Entrás desde el banco y cambiás el ritmo."];
+    if (media >= 64) return ["PROMESA", "El cuerpo ya responde. El juego grande está más adelante."];
+    if (media >= 50) return ["PROSPECTO", "Ya no sos un pibe. Cada temporada te acerca al equipo grande."];
+    return ["PIBE", "Tenés " + (state.edad || 19) + " años. El nivel llega con las temporadas."];
 }
 
 function salarioValor() {
@@ -369,6 +379,7 @@ function migrar() {
     state.victorias = state.victorias || 0;
     state.retirado = !!state.retirado;
     state.tipo = state.tipo || "novato";
+    rebajarPibe();
     state.dificultad = state.dificultad || "baja";
     state.ligaMercado = state.ligaMercado || "NCAA";
     state.confirmarCierre = !!state.confirmarCierre;
@@ -396,6 +407,14 @@ function elegirRival() {
         .sort((a, b) => Math.abs(Number(a.minima) - Number(mio.minima)) - Math.abs(Number(b.minima) - Number(mio.minima)));
     if (!pool.length) return null;
     return pool[hashTexto((state.nombre || "x") + "rival") % Math.min(4, pool.length)];
+}
+
+function pisoDe(liga) {
+    const nums = equipos
+        .filter((eq) => !liga || eq.liga === liga)
+        .map((eq) => Number(eq.minima))
+        .filter((n) => n > 0);
+    return nums.length ? Math.min.apply(null, nums) : null;
 }
 
 function equiposAlAlcance() {
@@ -634,10 +653,14 @@ function aplicarOpcion(indice) {
     }
     if (ev.tipo === "stat") {
         const clave = ["tiro", "velocidad", "defensa"][indice];
-        state.stats[clave] = Math.min(99, state.stats[clave] + 4);
-        if (ev.anio) state.edad += 1;
-        state.calibre = Math.min(99, (state.calibre || 46) + 2);
-        state.flash = etiquetaStat(clave) + " +4. Calibre " + state.calibre + ".";
+        const sube = aplicarSubida(clave, 1);
+        sumarCalibre(1);
+        if (ev.anio) {
+            state.edad += 1;
+            state.flash = (sube ? etiquetaStat(clave) + " +" + sube + ". " : "") + madurar();
+        } else {
+            state.flash = sube ? etiquetaStat(clave) + " +" + sube + ". Calibre " + state.calibre + "." : textoTope();
+        }
         state.rival.puntos += 8;
         avanzar();
         render();
@@ -675,7 +698,7 @@ function aplicarOpcion(indice) {
         state.edad += 1;
         state.temporada += 1;
         state.calendario = state.calendario.concat(eventosExtra());
-        state.flash = "Una temporada más. El cuerpo avisa, pero todavía saltás.";
+        state.flash = "Una temporada más. " + madurar();
         avanzar();
         render();
         return;
@@ -692,21 +715,25 @@ function etiquetaStat(clave) {
     return { tiro: "Tiro", velocidad: "Velocidad", defensa: "Defensa" }[clave] || clave;
 }
 
-function lanzarEntrenoRandom() {
-    const juegos = ["reflejos", "memoria", "simon", "defensa"];
-    const juego = juegos[Math.floor(Math.random() * juegos.length)];
-    state.esperando = "entreno";
-    state.fase = "lobby";
-    state.flash = "";
-    guardarLocal();
-    window.location.href = linkJuego(juego, "entreno");
-}
+const ENTRENOS = [
+    { id: "tiro", titulo: "Tiro al aro", stat: "Tiro", detalle: "20 puntos en 30 segundos" },
+    { id: "pase", titulo: "Pase relámpago", stat: "Control", detalle: "8 pases sin que te lo roben" },
+    { id: "dribling", titulo: "Dribling", stat: "Velocidad", detalle: "200 puntos en la pista" },
+    { id: "reflejos", titulo: "Reflejos", stat: "Velocidad", detalle: "Tocá la pelota a tiempo" },
+    { id: "memoria", titulo: "Memoria", stat: "Tiro", detalle: "Encontrá las parejas" },
+    { id: "simon", titulo: "Simón", stat: "Control", detalle: "Repetí la secuencia" },
+    { id: "defensa", titulo: "Defensa", stat: "Defensa", detalle: "Tapá el aro" }
+];
 
 function linkJuego(juego, modo) {
     const eq = equipoActual();
     const nombre = encodeURIComponent(state.nombre.trim());
     const equipo = eq ? eq.id : "";
-    const marca = "modo=" + (modo === "partido" ? "partido" : modo === "carrera" ? "carrera" : "entreno");
+    const marca = "modo=" + (modo === "partido" ? "partido" : modo === "carrera" ? "carrera" : "entreno")
+        + "&dificultad=" + encodeURIComponent(state.dificultad || "baja");
+    if (juego === "tiro") return "/minijuegos/tiro/?" + marca;
+    if (juego === "pase") return "/minijuegos/pase/?" + marca;
+    if (juego === "dribling") return "/minijuegos/dribling/?" + marca;
     if (juego === "reflejos") return "reflejos/index.php?equipo=" + equipo + "&nombre=" + nombre + "&" + marca;
     if (juego === "memoria") return "Juegodememoria.html?" + marca;
     if (juego === "simon") return "Simondice.html?" + marca;
@@ -768,17 +795,23 @@ async function comenzarAJugar() {
         return;
     }
     const respaldo = JSON.parse(JSON.stringify(state));
+    const cuerpo = { PG: [188, 82], SG: [196, 90], SF: [203, 98], PF: [208, 107], C: [213, 115] }[state.posicion] || [196, 90];
+    const campoCiudad = document.querySelector("#ciudad");
+    const campoDorsal = document.querySelector("#dorsal");
+    if (campoCiudad) state.ciudad = campoCiudad.value.trim();
+    if (campoDorsal) state.dorsal = campoDorsal.value;
     state.tez = "#a96f48";
     state.cabello = "h1";
     state.edad = 19;
-    state.altura = 196;
-    state.peso = 90;
-    state.dorsal = 11;
-    state.ciudad = "Buenos Aires, Argentina";
+    state.altura = cuerpo[0];
+    state.peso = cuerpo[1];
+    state.dorsal = String(state.dorsal || "11").replace(/\D/g, "").slice(0, 2) || "11";
+    state.ciudad = state.ciudad || "Buenos Aires";
     state.origen = "calle";
     state.equipoId = null;
     state.conferencia = "";
     state.calibre = 46;
+    state.crecimiento = { edad: 19, usado: 0 };
     fijarStats();
     state.quimica = 58;
     state.hinchada = 58;
@@ -802,6 +835,7 @@ async function comenzarAJugar() {
     state.victorias = 0;
     state.renegocioEn = null;
     state.id = null;
+    state.revision = 0;
     state.retirado = false;
     state.carrera = null;
     state.fase = "lobby";
@@ -817,6 +851,7 @@ async function comenzarAJugar() {
         });
         if (res.datos && res.datos.ok) {
             state.id = res.datos.id;
+            if (res.datos.revision) state.revision = res.datos.revision;
             guardarLocal();
         } else if (res.status === 422 || res.status === 403) {
             state = respaldo;
@@ -873,6 +908,8 @@ function payload() {
         partidos: state.partidos,
         victorias: state.victorias,
         fase: state.fase,
+        revision: state.revision || 0,
+        crecimiento: state.crecimiento || { edad: state.edad || 19, usado: 0 },
         retirado: !!state.retirado,
         partidas: state.partidas || 0,
         tipo: state.tipo || "novato",
@@ -888,56 +925,201 @@ function payload() {
     };
 }
 
+let guardando = false;
+let guardarOtra = false;
+
 async function persistir() {
     guardarLocal();
-    if (!state.id) return;
+    if (!state.nombre) return;
+    if (guardando) {
+        guardarOtra = true;
+        return;
+    }
+    if (!state.id) {
+        guardando = false;
+        return;
+    }
+    guardando = true;
     try {
         const res = await apiFetch("/api/guardar.php", {
             method: "POST",
             body: JSON.stringify(payload())
         });
-        if (res.datos && res.datos.ok && res.datos.id) state.id = res.datos.id;
-        else if (res.datos && res.datos.error) state.flash = res.datos.error;
+        if (res.status === 409 && res.datos && res.datos.ficha) {
+            aplicarFicha(res.datos.ficha);
+            state.flash = res.datos.error || "Otra partida guardó después.";
+            render();
+        } else if (res.datos && res.datos.ok && res.datos.id) {
+            state.id = res.datos.id;
+            if (res.datos.revision) state.revision = res.datos.revision;
+        } else if (res.datos && res.datos.error) {
+            state.flash = res.datos.error;
+            render();
+        }
         guardarLocal();
     } catch (falla) {
         /* La carrera sigue en el teléfono. */
+    } finally {
+        guardando = false;
+        if (guardarOtra) {
+            guardarOtra = false;
+            persistir();
+        }
     }
+}
+
+function premiosGuardados() {
+    let lista = [];
+    try { lista = JSON.parse(localStorage.getItem("rookie-recompensas") || "[]"); } catch (error) { lista = []; }
+    if (!Array.isArray(lista)) lista = [];
+    if (!lista.length) {
+        try {
+            const uno = JSON.parse(localStorage.getItem("rookie-recompensa") || "null");
+            if (uno) lista = [uno];
+        } catch (error) { lista = []; }
+    }
+    return lista;
 }
 
 function cobrarRecompensa() {
-    const crudo = localStorage.getItem("rookie-recompensa");
-    if (!crudo || !state.stats) return;
-    let premio;
-    try { premio = JSON.parse(crudo); } catch (error) { return; }
-    if (!premio || state.cobradas.includes(premio.id)) {
-        localStorage.removeItem("rookie-recompensa");
-        return;
-    }
-    state.cobradas.push(premio.id);
+    const lista = premiosGuardados();
+    if (!lista.length || !state.stats) return;
+    if (!state.nombre || state.fase === "crear") return;
+    localStorage.removeItem("rookie-recompensas");
     localStorage.removeItem("rookie-recompensa");
-    if (!state.nombre || state.fase === "crear") {
-        persistir();
-        return;
+    lista.forEach((premio) => {
+        if (!premio || state.cobradas.includes(premio.id)) return;
+        state.cobradas.push(premio.id);
+        if (state.esperando === "partido") cobrarPrima(!!premio.gano);
+        else if (state.esperando === "carrera") cobrarEntrenoCarrera(!!premio.gano, premio.juego);
+        else cobrarEntreno(!!premio.gano, premio.juego);
+    });
+}
+
+function techoStat(edad) {
+    const e = Math.max(18, Number(edad) || 19);
+    if (e <= 19) return 56;
+    return Math.min(96, 56 + (e - 19) * 3);
+}
+
+function techoCalibre(edad) {
+    const e = Math.max(18, Number(edad) || 19);
+    if (e <= 19) return 52;
+    return Math.min(96, 52 + (e - 19) * 3);
+}
+
+function cupoAnual(edad) {
+    const e = Number(edad) || 19;
+    if (e <= 21) return 8;
+    if (e <= 30) return 12;
+    if (e <= 34) return 8;
+    return 4;
+}
+
+function asegurarCrecimiento() {
+    const edad = Number(state.edad) || 19;
+    if (!state.crecimiento || typeof state.crecimiento !== "object" || Number(state.crecimiento.edad) !== edad) {
+        state.crecimiento = { edad: edad, usado: 0 };
     }
-    if (state.esperando === "partido") cobrarPrima(!!premio.gano);
-    else if (state.esperando === "carrera") cobrarEntrenoCarrera(!!premio.gano, premio.juego);
-    else cobrarEntreno(!!premio.gano, premio.juego);
+    return state.crecimiento;
+}
+
+function cupoRestante() {
+    const c = asegurarCrecimiento();
+    return Math.max(0, cupoAnual(state.edad) - (Number(c.usado) || 0));
+}
+
+function aplicarSubida(campo, cuanto) {
+    if (!state.stats || !campo || cuanto <= 0) return 0;
+    const actual = Number(state.stats[campo]) || 0;
+    const techo = state.tipo === "profesional" ? 99 : techoStat(state.edad);
+    if (actual >= techo) return 0;
+    const cupo = cupoRestante();
+    if (cupo <= 0) return 0;
+    const sube = Math.min(cuanto, cupo, techo - actual);
+    state.stats[campo] = actual + sube;
+    const c = asegurarCrecimiento();
+    c.usado = (Number(c.usado) || 0) + sube;
+    return sube;
+}
+
+function sumarCalibre(n) {
+    if (n <= 0) return 0;
+    const techo = state.tipo === "profesional" ? 99 : techoCalibre(state.edad);
+    const actual = Number(state.calibre) || 46;
+    if (actual >= techo) return 0;
+    const sube = Math.min(n, techo - actual);
+    state.calibre = actual + sube;
+    return sube;
+}
+
+function madurar() {
+    const profesional = state.tipo === "profesional";
+    const techo = profesional ? 99 : techoStat(state.edad);
+    if (state.stats) {
+        ["velocidad", "tiro", "fuerza", "control", "defensa"].forEach((campo) => {
+            const actual = Number(state.stats[campo]) || 0;
+            if (actual < techo) state.stats[campo] = Math.min(techo, actual + 2);
+        });
+    }
+    state.crecimiento = { edad: Number(state.edad) || 19, usado: 0 };
+    const techoC = profesional ? 99 : techoCalibre(state.edad);
+    const cal = Number(state.calibre) || 46;
+    if (cal < techoC) state.calibre = Math.min(techoC, cal + 2);
+    reflejarCalibre();
+    return "Cumpliste un año. El techo de las habilidades pasa a " + techo + ".";
+}
+
+function textoTope() {
+    if (cupoRestante() <= 0) {
+        return "Este año ya sumaste lo que da el cuerpo. El techo sube con la próxima temporada.";
+    }
+    return "A los " + (state.edad || 19) + " años el techo de esa habilidad es " + techoStat(state.edad) + ".";
+}
+
+function textoCrecimiento() {
+    const edad = Number(state.edad) || 19;
+    if (state.tipo === "profesional") {
+        return "Este año quedan " + cupoRestante() + " puntos de habilidad. El cuerpo ya está hecho.";
+    }
+    return "A los " + edad + " el techo es " + techoStat(edad) + ". Este año quedan " + cupoRestante() + " puntos. Cada temporada el techo sube.";
+}
+
+function rebajarPibe() {
+    if (!state.stats || !state.posicion || !BASES[state.posicion]) return;
+    if (state.tipo === "profesional" || state.retirado) return;
+    const edad = Number(state.edad) || 19;
+    if (edad > 22) return;
+    if ((Number(state.temporada) || 1) > 3) return;
+    if ((Number(state.partidos) || 0) > 12) return;
+    if (ovr() < 55) return;
+    state.stats = Object.assign({}, BASES[state.posicion]);
+    const techo = techoCalibre(edad);
+    if ((Number(state.calibre) || 46) > techo) state.calibre = techo;
+    state.crecimiento = { edad: edad, usado: 0 };
 }
 
 function subirStat(juego, cuanto) {
-    const mapa = { reflejos: "velocidad", simon: "control", memoria: "tiro", defensa: "defensa" };
+    const mapa = {
+        reflejos: "velocidad",
+        simon: "control",
+        memoria: "tiro",
+        defensa: "defensa",
+        tiro: "tiro",
+        pase: "control",
+        dribling: "velocidad"
+    };
     const clave = mapa[juego];
-    if (!clave || !state.stats) return "";
-    state.stats[clave] = Math.min(99, state.stats[clave] + cuanto);
-    if (juego === "defensa" && cuanto >= 3) sumarTrofeo("MEJOR DEFENSOR");
-    return { velocidad: "Velocidad", control: "Control", tiro: "Tiro", defensa: "Defensa" }[clave];
+    if (!clave || !state.stats) return { nombre: "", sube: 0 };
+    const antes = Number(state.stats[clave]) || 0;
+    const sube = aplicarSubida(clave, cuanto);
+    if (clave === "defensa" && antes < 80 && state.stats.defensa >= 80) sumarTrofeo("MEJOR DEFENSOR");
+    const nombre = { velocidad: "Velocidad", control: "Control", tiro: "Tiro", defensa: "Defensa" }[clave] || "";
+    return { nombre: nombre, sube: sube };
 }
 
 function pasoCalibre(gano) {
-    const dificultad = state.dificultad || "baja";
-    if (dificultad === "alta") return gano ? 4 : 2;
-    if (dificultad === "media") return gano ? 7 : 3;
-    return gano ? 10 : 4;
+    return gano ? 1 : 0;
 }
 
 function nivelManager() {
@@ -961,12 +1143,17 @@ function avisoNivel() {
 function cobrarEntreno(gano, juego) {
     state.esperando = null;
     state.partidas = (state.partidas || 0) + 1;
-    const sube = gano ? 6 : 2;
-    const nombre = subirStat(juego, sube) || "Habilidad";
-    const media = ovr();
-    state.calibre = Math.min(99, Math.max((state.calibre || 46) + pasoCalibre(gano), media));
-    state.flash = nombre + " +" + sube + ". Media " + media + ". Calibre " + state.calibre + "." + avisoNivel();
-    state.fase = "lobby";
+    const resultado = gano ? subirStat(juego, 2) : { nombre: "", sube: 0 };
+    const cal = sumarCalibre(pasoCalibre(gano));
+    if (!gano) {
+        state.flash = "No llegaste a la meta. El calibre sigue en " + state.calibre + ".";
+    } else if (!resultado.sube && !cal) {
+        state.flash = textoTope();
+    } else {
+        const habilidad = resultado.sube ? resultado.nombre + " +" + resultado.sube + ". " : "Esa habilidad está en el techo. ";
+        state.flash = habilidad + "Calibre " + state.calibre + (cal ? " (+" + cal + ")." : ".") + avisoNivel();
+    }
+    state.fase = "entrenar";
     persistir();
     render();
 }
@@ -981,8 +1168,7 @@ function cobrarPrima(gano) {
         state.plusSalario += prima;
         state.hinchada = clamp(state.hinchada + 8, 0, 100);
         state.puntosCarrera += 16;
-        const extra = state.dificultad === "alta" ? 1 : 2;
-        state.calibre = Math.min(99, (state.calibre || 46) + extra);
+        sumarCalibre(1);
         state.flash = state.equipoId
             ? "Prima: US$ " + prima.toFixed(1) + "M. El sueldo queda en US$ " + salario() + "M." + avisoNivel()
             : "Te vieron en la calle. Esa prima entra cuando firmes." + avisoNivel();
@@ -998,7 +1184,7 @@ function cobrarPrima(gano) {
     if (state.partidos % 10 === 0) {
         state.temporada += 1;
         state.edad += 1;
-        state.flash += " Temporada " + state.temporada + ".";
+        state.flash += " Temporada " + state.temporada + ". " + madurar();
     }
     state.quimica = state.hinchada;
     state.fase = "lobby";
@@ -1014,7 +1200,11 @@ function textoLobby() {
     const eq = equipoActual();
     const ofertas = equiposAlAlcance();
     if (!eq) {
-        if (!ofertas.length) return "Estás en la calle. Entrená para subir el calibre. Un club llama desde 54. La NBA, desde 78.";
+        if (!ofertas.length) {
+            const piso = pisoDe();
+            const nba = pisoDe("NBA");
+            return "Estás en la calle. Entrená para subir el calibre. Un club llama desde " + (piso || 54) + ". La NBA, desde " + (nba || 78) + ".";
+        }
         return "Hay ofertas para tu calibre " + state.calibre + ". Podés firmar y empezar la carrera.";
     }
     return "Contrato con " + eq.nombre + ". " + (ofertas.length ? "Hay un club mejor mirándote. " : "") + "El modo carrera arma la temporada con los clubes de la base.";
@@ -1027,7 +1217,7 @@ function resolverMinijuego(gano) {
         state.hinchada = clamp(state.hinchada + 12, 0, 100);
         state.puntosCarrera += ev && ev.copa ? 32 : 26;
         state.asistenciasCarrera += 6;
-        state.flash = "Ganaste. Calibre " + ((state.calibre || 46) + 10) + ".";
+        state.flash = "Ganaste.";
         if (ev && ev.copa) {
             const liga = ligaDe(equipoActual());
             if (liga === "NBA") {
@@ -1040,7 +1230,7 @@ function resolverMinijuego(gano) {
                 sumarTrofeo("CAMPEÓN NCAA");
             }
             if (liga !== "CALLE") state.titulos += 1;
-            state.flash = (liga === "NBA" ? "Campeón de la NBA." : "Ganaste la final.") + " Calibre " + ((state.calibre || 46) + 10) + ".";
+            state.flash = liga === "NBA" ? "Campeón de la NBA." : "Ganaste la final.";
         }
         if (ev && ev.allstar) {
             sumarTrofeo("ALL-STAR");
@@ -1051,9 +1241,10 @@ function resolverMinijuego(gano) {
         state.hinchada = clamp(state.hinchada - 8, 0, 100);
         state.rival.puntos += 20;
         if (ev && ev.copa) state.rival.titulos += 1;
-        state.flash = "Se escapó el partido. Calibre " + ((state.calibre || 46) + 4) + ".";
+        state.flash = "Se escapó el partido.";
     }
-    state.calibre = Math.min(99, (state.calibre || 46) + (gano ? 10 : 4));
+    const cal = sumarCalibre(gano ? 1 : 0);
+    state.flash += cal ? " Calibre " + state.calibre + " (+" + cal + ")." : " El calibre sigue en " + state.calibre + ".";
     state.quimica = state.hinchada;
     avanzar();
 }
@@ -1104,7 +1295,14 @@ function cabeza(derecha) {
 function fraseBtn(clave, hueco) {
     const lista = FRASES[clave] || FRASES.inicio;
     const semilla = hashTexto(clave + "|" + (state.nombre || "") + "|" + (state.partidas || 0));
-    const frase = lista[semilla % lista.length];
+    let frase = lista[semilla % lista.length];
+    const esManager = state.cuenta && state.cuenta.user && state.cuenta.user.manager;
+    if (clave === "cuenta" && !esManager) {
+        frase = ["El que entrena cuando nadie mira, llega.", "John Wooden", "entrenar", "Volver a entrenar"];
+    }
+    if (!(state.cuenta && state.cuenta.user) && frase[2] === "empezar") {
+        frase = [frase[0], frase[1], "portada", "Entrá para armar"];
+    }
     const boton = `<button class="cita-ir" data-accion="${esc(frase[2])}"><span class="cita">"${esc(frase[0])}"</span><small>${esc(frase[1])} · ${esc(frase[3])}</small></button>`;
     if (hueco === false) return boton;
     return `<div class="hueco">${boton}</div>`;
@@ -1156,7 +1354,7 @@ function bloqueFicha() {
     const antes = state.tipo === "profesional"
         ? `<p class="nota">Antes de contratarte${state.clubOrigen ? ", en " + esc(state.clubOrigen) : ""}: ${esc(previa || state.notaPrevia || "línea previa sin publicar")}.</p>`
         : "";
-    return `<div class="caja"><h2>ATRIBUTOS</h2><div class="attrs">${htmlSkills}</div></div>
+    return `<div class="caja"><h2>ATRIBUTOS</h2><div class="attrs">${htmlSkills}</div><p class="nota">${esc(textoCrecimiento())}</p></div>
         <div class="caja"><h2>ROL · ${state.equipoId ? "US$ " + salario() + "M" : "SIN CONTRATO"}</h2><strong class="gold">${esc(nombreRol)}</strong><p class="nota">${esc(detalleRol)}</p><div class="tags">${tags}</div></div>
         <div class="caja"><h2>VITRINA</h2><div class="copas">${copas}</div>${ganadas.length ? "" : `<p class="nota">La vitrina espera el primer título.</p>`}</div>
         ${antes}`;
@@ -1174,6 +1372,7 @@ function historialVisible() {
 }
 
 function botonGoogle() {
+    if (!state.cuenta || !state.cuenta.google) return "";
     return `<a class="btn ghost google" href="/auth/google"><span class="logo-google" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span>Entrar con Google</a>`;
 }
 
@@ -1220,15 +1419,15 @@ function pantallaComo() {
         <div class="body">
             <h1>COMO<br><span>JUGAR</span></h1>
             <div class="opciones">
-                <div class="caja"><h2>01 ARMAS</h2><p class="lead">Nombre, puesto, estilo y dos habilidades. Sin equipo.</p></div>
-                <div class="caja"><h2>02 LOBBY</h2><p class="lead">Entrenás, mirás la ficha y esperás. La carrera no se cierra.</p></div>
-                <div class="caja"><h2>03 OFERTAS</h2><p class="lead">Un club llama si tu calibre llega a su piso. Podés cambiar y cobrar más.</p></div>
-                <div class="caja"><h2>04 PARTIDO</h2><p class="lead">Si ganás, hay prima. Cada tanto el contrato se renueva.</p></div>
+                <div class="caja"><h2>01 ARMAR</h2><p class="lead">Nombre, puesto, estilo y dos habilidades. Arrancás en la calle.</p></div>
+                <div class="caja"><h2>02 ENTRENO</h2><p class="lead">A los 19 el techo es bajo. Cada temporada sube, y la habilidad suma dentro de ese techo.</p></div>
+                <div class="caja"><h2>03 CARRERA</h2><p class="lead">Sorteo en la LNB, año local y draft. En el partido elegís tirar, pasar o penetrar.</p></div>
+                <div class="caja"><h2>04 OFERTAS</h2><p class="lead">Un club llama cuando tu calibre llega a su piso. La NBA es el techo.</p></div>
             </div>
             ${fraseBtn("como")}
         </div>
         <div class="actions">
-            <button class="btn" data-accion="empezar">Armar jugador</button>
+            ${(state.cuenta && state.cuenta.user) ? `<button class="btn" data-accion="empezar">Armar jugador</button>` : `<button class="btn" data-accion="portada">Entrá para armar</button>`}
         </div>
     </section>`;
 }
@@ -1249,8 +1448,10 @@ function pantallaArmar() {
         <div class="body">
             <h1>ARMA TU<br><span>JUGADOR</span></h1>
             <input class="campo" id="nombre" maxlength="14" autocomplete="off" value="${esc(state.nombre)}" placeholder="Tu nombre">
+            <input class="campo" id="ciudad" maxlength="40" autocomplete="off" value="${esc(state.ciudad || "")}" placeholder="Ciudad">
+            <input class="campo" id="dorsal" inputmode="numeric" maxlength="2" autocomplete="off" value="${esc(state.dorsal || 11)}" placeholder="Dorsal">
             <div class="pos-row">${botonesPos}</div>
-            <p class="nota">${state.posicion ? esc(POSICIONES[state.posicion]) : "Elegí tu puesto. Arrancás en la calle, sin club."}</p>
+            <p class="nota">${state.posicion ? esc(POSICIONES[state.posicion]) : "Elegí tu puesto."} Arrancás con 19 años. El techo de las habilidades sube cada temporada.</p>
             <h2>COMO JUEGO</h2>
             ${estilos.length ? `<div class="opciones">${botonesEstilo}</div><p class="nota">No se puede cambiar después.</p>` : `<p class="nota">Elegí un puesto para ver tu estilo.</p>`}
             <h2>HABILIDADES ${state.habilidades.length}/2</h2>
@@ -1283,7 +1484,7 @@ function pantallaLobby() {
         ${cabeza(`<button class="link" data-accion="cuenta">CUENTA</button>`)}
         <div class="body">
             <div class="ficha-top">
-                <div class="ovr">${ovr()}<small>${esc(state.posicion)}</small></div>
+                <div class="ovr">${state.calibre || 46}<small>CAL</small></div>
                 <div>
                     <div class="nombre-jugador">${esc(state.nombre.trim())} · ${esc(state.dorsal)}</div>
                     <p class="subficha">${esc(POSICIONES[state.posicion] || "")} · ${esc(etiquetaClub(eq))} · ${state.edad} años<br>${esc(state.ciudad)} · ${(state.altura / 100).toFixed(2)} m · ${state.peso} kg</p>
@@ -1293,7 +1494,7 @@ function pantallaLobby() {
             ${hud()}
             ${state.flash ? `<p class="flash">${esc(state.flash)}</p>` : ""}
             <p class="lead">${esc(textoLobby())}</p>
-            <p class="nums">${box.ppg}<small>PTS</small> ${box.reb}<small>REB</small> ${box.ast}<small>AST</small></p>
+            ${numerosVisibles()}
             ${bloqueFicha()}
             ${fraseBtn("lobby")}
         </div>
@@ -1306,15 +1507,19 @@ function pantallaLobby() {
 }
 
 function pantallaEntrenar() {
+    const lista = ENTRENOS.map((juego) =>
+        `<a class="opcion" data-juego="${esc(juego.id)}" data-modo="entreno" href="${esc(linkJuego(juego.id, "entreno"))}"><strong>${esc(juego.titulo)}</strong><span>${esc(juego.stat)} · ${esc(juego.detalle)}</span></a>`
+    ).join("");
     return `<section class="screen">
         ${cabeza("GYM")}
         <div class="body">
             <h1>ENTRENAR</h1>
-            <p class="lead">${esc(state.nombre || "Tu jugador")} · dificultad ${esc(textoDificultad(state.dificultad))}. El minijuego sale al azar. Ganar sube esa habilidad y la media.</p>
+            <p class="lead">${esc(state.nombre || "Tu jugador")} · dificultad ${esc(textoDificultad(state.dificultad))}. Si cumplís la meta, esa habilidad sube 2. Si no llegás, no sube. ${esc(textoCrecimiento())}</p>
+            ${state.flash ? `<p class="flash">${esc(state.flash)}</p>` : ""}
+            <div class="opciones">${lista}</div>
             ${fraseBtn("entrenar")}
         </div>
         <div class="actions columna">
-            <button class="btn" data-accion="entrenar">Entrenar</button>
             <button class="btn ghost" data-accion="lobby">Volver</button>
         </div>
     </section>`;
@@ -1322,7 +1527,8 @@ function pantallaEntrenar() {
 
 function pantallaOfertas() {
     const lista = equiposAlAlcance();
-    let lead = "Tu calibre es " + (state.calibre || 46) + ". Ningún club te llama todavía. Entrená y volvé. La NBA abre en 78.";
+    const nba = pisoDe("NBA");
+    let lead = "Tu calibre es " + (state.calibre || 46) + ". Ningún club te llama todavía. Entrená y volvé. La NBA abre en " + (nba || 78) + ".";
     if (!equipos.length) lead = "No pude leer los clubes. Volvé al lobby e intentá de nuevo.";
     else if (lista.length) lead = "Tu calibre es " + state.calibre + ". " + lista[0].nombre + " (" + lista[0].liga + ") pide " + lista[0].minima + ".";
     const botones = lista.map((eq) =>
@@ -1624,6 +1830,10 @@ function ligar() {
             state.error = "";
         });
     }
+    const ciudad = raiz.querySelector("#ciudad");
+    const dorsal = raiz.querySelector("#dorsal");
+    if (ciudad) ciudad.addEventListener("input", () => { state.ciudad = ciudad.value; });
+    if (dorsal) dorsal.addEventListener("input", () => { state.dorsal = dorsal.value.replace(/\D/g, "").slice(0, 2); dorsal.value = state.dorsal; });
     raiz.querySelectorAll("#alta-nombre, #correo, #clave").forEach((campo) => {
         campo.addEventListener("input", () => {
             leerBorrador();
@@ -1693,7 +1903,10 @@ function ligar() {
                     render();
                     return;
                 }
-                lanzarEntrenoRandom();
+                state.fase = "entrenar";
+                state.flash = "";
+                guardarLocal();
+                render();
                 return;
             }
             if (accion === "modocarrera") {
@@ -1878,9 +2091,7 @@ function ligar() {
     });
     raiz.querySelectorAll("[data-entrenar]").forEach((nodo) => {
         nodo.addEventListener("click", async () => {
-            const ok = await abrirJugador(nodo.dataset.entrenar, "lobby");
-            if (!ok || state.retirado || !state.nombre || !state.stats) return;
-            lanzarEntrenoRandom();
+            await abrirJugador(nodo.dataset.entrenar, "entrenar");
         });
     });
     raiz.querySelectorAll("[data-carrera]").forEach((nodo) => {
@@ -1913,6 +2124,8 @@ function ligar() {
             if (modo === "carrera") {
                 if (state.carrera) state.carrera.espera = nodo.dataset.juego;
                 state.fase = "modocarrera";
+            } else if (modo === "entreno") {
+                state.fase = "entrenar";
             } else {
                 state.fase = "lobby";
             }
@@ -2123,11 +2336,8 @@ async function sincronizarCuenta() {
             state.flash = "Cargué tu carrera.";
         }
     }
-    if (!state.flash && ingreso === "correo") {
-        state.flash = "Cuenta creada. Te enviamos la contraseña y unas frases al correo.";
-    }
-    if (!state.flash && ingreso === "correo-no") {
-        state.flash = "Cuenta creada. El correo no pudo salir. Revisá el SMTP del servidor.";
+    if (!state.flash && (ingreso === "correo" || ingreso === "correo-no")) {
+        state.flash = "Cuenta creada.";
     }
     if (!state.flash && ingreso === "ok") state.flash = "Entraste.";
 }
@@ -2135,24 +2345,18 @@ async function sincronizarCuenta() {
 async function arrancar() {
     cargarLocal();
     migrar();
-    try {
-        const res = await apiFetch("/api/equipos.php");
-        equipos = Array.isArray(res.datos) ? res.datos : [];
-        if (!res.okHttp) {
-            equipos = [];
-            state.error = "No pude leer los equipos. Revisá que la base siga encendida.";
-        }
-    } catch (falla) {
+    const [res, mercado] = await Promise.all([
+        apiFetch("/api/equipos.php").catch(() => null),
+        apiFetch("/api/estrellas").catch(() => null),
+        sincronizarCuenta()
+    ]);
+    if (!res || !res.okHttp || !Array.isArray(res.datos)) {
         equipos = [];
         state.error = "No pude leer los equipos. Revisá que la base siga encendida.";
+    } else {
+        equipos = res.datos;
     }
-    try {
-        const mercado = await apiFetch("/api/estrellas");
-        estrellas = Array.isArray(mercado.datos) ? mercado.datos : [];
-    } catch (falla) {
-        estrellas = [];
-    }
-    await sincronizarCuenta();
+    estrellas = mercado && Array.isArray(mercado.datos) ? mercado.datos : [];
     if (!state.cuenta || !state.cuenta.user) {
         const cuenta = state.cuenta;
         const flash = state.flash;

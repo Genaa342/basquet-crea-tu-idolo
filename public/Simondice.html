@@ -10,7 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/mini-fit.css?v=8">
-    <script src="js/mini-fit.js?v=5"></script>
+    <link rel="stylesheet" href="css/mini-shell.css?v=3">
+    <script src="js/mini-fit.js?v=8"></script>
 
     <style>
 
@@ -736,7 +737,7 @@
                 </p>
 
                 <h1>
-                    SIMÓN <span>DICE</span>
+                    SIMON <span>DICE</span>
                 </h1>
 
                 <p class="subtitle">
@@ -962,6 +963,8 @@
 
         let playerTurn = false;
 
+        let terminado = false;
+
         let record = 0;
 
 
@@ -1012,6 +1015,7 @@
         ========================= */
 
         function startGame() {
+            terminado = false;
             if (window.rookieMarcar) rookieMarcar(true);
 
             currentRound = 0;
@@ -1265,10 +1269,12 @@
                 `✕ TE EQUIVOCASTE. LLEGASTE A LA RONDA ${currentRound}.`;
 
 
+            terminado = true;
+
             startButton.disabled = false;
 
             startButton.textContent =
-                "↻ JUGAR DE NUEVO";
+                "CONTINUAR";
 
         }
 
@@ -1287,10 +1293,12 @@
                 "🏆 ¡GANASTE! COMPLETASTE LAS 8 RONDAS.";
 
 
+            terminado = true;
+
             startButton.disabled = false;
 
             startButton.textContent =
-                "↻ JUGAR DE NUEVO";
+                "CONTINUAR";
 
 
             record = 8;
@@ -1324,7 +1332,10 @@
 
         startButton.addEventListener(
             "click",
-            startGame
+            function () {
+                if (terminado && window.rookieContinuar) window.rookieContinuar();
+                else startGame();
+            }
         );
 
 

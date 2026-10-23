@@ -21,12 +21,13 @@ class AccesoTest extends TestCase
         }
     }
 
-    public function test_el_mensaje_de_bienvenida_lleva_la_clave_y_frases(): void
+    public function test_el_mensaje_de_bienvenida_no_lleva_la_clave(): void
     {
-        $mensaje = (new CorreoBienvenida)->mensaje('Luka', 'cancha-9');
+        $mensaje = (new CorreoBienvenida)->mensaje('Luka');
 
-        $this->assertStringContainsString('cancha-9', $mensaje['texto']);
-        $this->assertStringContainsString('cancha-9', $mensaje['html']);
+        $this->assertStringNotContainsString('cancha-9', $mensaje['texto']);
+        $this->assertStringNotContainsString('cancha-9', $mensaje['html']);
+        $this->assertStringContainsString('la contraseña que elegiste', $mensaje['texto']);
         $this->assertStringContainsString('Gracias por crear tu cuenta', $mensaje['texto']);
         $this->assertStringContainsString('Michael Jordan', $mensaje['texto']);
         $this->assertStringContainsString('John Wooden', $mensaje['html']);
@@ -38,9 +39,9 @@ class AccesoTest extends TestCase
         {
             public array $enviados = [];
 
-            public function enviar(string $nombre, string $email, string $clave): void
+            public function enviar(string $nombre, string $email): void
             {
-                $this->enviados[] = [$nombre, $email, $clave];
+                $this->enviados[] = [$nombre, $email];
             }
         };
         $this->app->instance(CorreoBienvenida::class, $correo);
@@ -55,7 +56,7 @@ class AccesoTest extends TestCase
         $usuario = User::query()->where('email', 'luka@example.com')->first();
         $this->assertNotNull($usuario);
         $this->assertTrue(Hash::check('cancha-9', $usuario->password));
-        $this->assertSame([['Luka', 'luka@example.com', 'cancha-9']], $correo->enviados);
+        $this->assertSame([['Luka', 'luka@example.com']], $correo->enviados);
 
         $this->postJson('/auth/salir')->assertOk()->assertJson(['ok' => true]);
         $this->assertGuest();
@@ -71,7 +72,7 @@ class AccesoTest extends TestCase
     {
         $this->app->instance(CorreoBienvenida::class, new class extends CorreoBienvenida
         {
-            public function enviar(string $nombre, string $email, string $clave): void
+            public function enviar(string $nombre, string $email): void
             {
                 throw new \RuntimeException('smtp caido');
             }

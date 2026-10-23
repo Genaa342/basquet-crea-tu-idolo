@@ -812,7 +812,11 @@ button, input, select, textarea { touch-action: manipulation; }
     line-height: 1;
     letter-spacing: 0;
     border: 2px solid #120c08;
+    background: #1c2433;
+    color: #f4f7ff;
 }
+
+#app .monograma.calle { font-size: 8px; }
 
 #app .body {
     overflow-x: hidden;
@@ -1184,7 +1188,7 @@ button, input, select, textarea { touch-action: manipulation; }
     #app .actions.columna {
         grid-area: actions;
         flex-direction: column;
-        justify-content: flex-start;
+        justify-content: flex-end;
         align-self: stretch;
         width: 100%;
         gap: 10px;
@@ -1220,4 +1224,9 @@ button, input, select, textarea { touch-action: manipulation; }
     #app .opciones { grid-template-columns: 1fr 1fr; }
     #app .ficha .attrs,
     #app .copas { gap: 8px 20px; }
+
+    #app .caja,
+    #app .hud div {
+        background: rgba(6, 12, 28, 0.94);
+    }
 }

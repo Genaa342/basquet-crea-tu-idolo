@@ -67,7 +67,7 @@ class AccesoController extends Controller
         $salio = true;
         $aviso = '';
         try {
-            $correo->enviar($usuario->name, $usuario->email, $datos['password']);
+            $correo->enviar($usuario->name, $usuario->email);
         } catch (Throwable) {
             $salio = false;
             $aviso = 'La cuenta quedó creada, pero el correo no salió. Revisá el SMTP del servidor.';

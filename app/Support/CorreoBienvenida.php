@@ -10,7 +10,7 @@ class CorreoBienvenida
     /**
      * @return array{asunto: string, html: string, texto: string}
      */
-    public function mensaje(string $nombre, string $clave): array
+    public function mensaje(string $nombre): array
     {
         $frases = [
             ['He fallado una y otra vez en mi vida. Y por eso tengo éxito.', 'Michael Jordan'],
@@ -25,19 +25,17 @@ class CorreoBienvenida
             $bloques[] = '<p style="margin:0 0 12px;"><em>"'.e($frase).'"</em><br>'.e($autor).'</p>';
         }
 
-        $asunto = 'THE ROOKIE: tu cuenta y tu contraseña';
+        $asunto = 'THE ROOKIE: tu cuenta está lista';
         $texto = "Hola {$nombre}.\n\n"
             ."Gracias por crear tu cuenta en THE ROOKIE. La cancha ya está abierta.\n\n"
-            ."Tu contraseña es: {$clave}\n\n"
-            ."Entrá con tu email y con esa clave. Guardala. No la compartas.\n\n"
+            ."Entrá con tu email y con la contraseña que elegiste. No la compartas.\n\n"
             .implode("\n", $lineas)."\n\n"
             ."Nos vemos en la vereda.\nTHE ROOKIE";
 
         $html = '<div style="font-family:Arial,sans-serif;color:#111;line-height:1.45;">'
             .'<p>Hola '.e($nombre).'.</p>'
             .'<p>Gracias por crear tu cuenta en <strong>THE ROOKIE</strong>. La cancha ya está abierta.</p>'
-            .'<p>Tu contraseña es: <strong>'.e($clave).'</strong></p>'
-            .'<p>Entrá con tu email y con esa clave. Guardala. No la compartas.</p>'
+            .'<p>Entrá con tu email y con la contraseña que elegiste. No la compartas.</p>'
             .implode('', $bloques)
             .'<p>Nos vemos en la vereda.<br>THE ROOKIE</p>'
             .'</div>';
@@ -45,12 +43,17 @@ class CorreoBienvenida
         return ['asunto' => $asunto, 'html' => $html, 'texto' => $texto];
     }
 
-    public function enviar(string $nombre, string $email, string $clave): void
+    public function enviar(string $nombre, string $email): void
     {
-        $mensaje = $this->mensaje($nombre, $clave);
+        $host = (string) config('mail.mailers.smtp.host');
+        if (in_array($host, ['127.0.0.1', 'localhost', '0.0.0.0'], true)) {
+            throw new \RuntimeException('No hay un servidor de correo en este equipo.');
+        }
+
+        $mensaje = $this->mensaje($nombre);
         $mail = new PHPMailer(true);
         $mail->CharSet = 'UTF-8';
-        $mail->Timeout = 12;
+        $mail->Timeout = 4;
         $mail->isSMTP();
         $mail->Host = (string) config('mail.mailers.smtp.host');
         $mail->Port = (int) config('mail.mailers.smtp.port');

@@ -8,6 +8,9 @@ const STATS_CARRERA = [
 ];
 
 const ENTRENO_CARRERA = {
+    tiro: { titulo: "Tiro al aro", detalle: "20 puntos suben el tiro", juego: "tiro" },
+    pase: { titulo: "Pase relámpago", detalle: "8 pases suben el control", juego: "pase" },
+    dribling: { titulo: "Dribling", detalle: "200 puntos suben la velocidad", juego: "dribling" },
     memoria: { titulo: "Memoria", detalle: "Sube el tiro del partido", juego: "memoria" },
     simon: { titulo: "Simón", detalle: "Sube el control del pase", juego: "simon" },
     defensa: { titulo: "Defensa", detalle: "Tapá el aro", juego: "defensa" },
@@ -90,11 +93,22 @@ function grlCarrera() {
 
 function reflejarCalibre() {
     const media = grlCarrera();
-    state.calibre = Math.min(99, Math.max(Number(state.calibre) || 0, media));
+    const actual = Number(state.calibre) || 46;
+    const techo = state.tipo === "profesional" || typeof techoCalibre !== "function" ? 99 : techoCalibre(state.edad);
+    if (actual >= techo) return;
+    state.calibre = Math.min(techo, Math.max(actual, media));
 }
 
 function clubesLiga(liga) {
     return (equipos || []).filter((eq) => eq.liga === liga);
+}
+
+function clubesSorteo() {
+    const liga = clubesLiga("LNB");
+    const techo = (Number(state.calibre) || 46) + 8;
+    const cerca = liga.filter((eq) => Number(eq.minima) <= techo);
+    if (cerca.length) return cerca;
+    return liga.slice().sort((a, b) => Number(a.minima) - Number(b.minima)).slice(0, 5);
 }
 
 const COSTO_XP = 5;
@@ -133,7 +147,7 @@ function debuts() {
         ] },
         { t: "CLÁSICO LOCAL", d: "Se juega con los dientes apretados. Varias posesiones, y en cada una decidís vos.", partido: true },
         { t: "SEMANA LARGA", d: "Tres partidos en siete días. El cuerpo avisa.", op: [
-            { t: "Gym de tiro", fx: () => { subirCampo("tiro", 2); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: "Tiro +2. Las piernas pesan.", out: "neutro" }; } },
+            { t: "Gym de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El cuerpo no da más este año. Las piernas pesan.", out: "neutro" }; } },
             { t: "Descansar", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 14, 0, 100); return { det: "Llegás fresco.", out: "neutro" }; } }
         ] },
         { t: "CIERRE DEL AÑO", d: "Último partido antes del draft. Hay scouts en la tribuna.", partido: true }
@@ -143,7 +157,7 @@ function debuts() {
 function personales() {
     return [
         { t: "DÍA LIBRE", d: "Mañana hay partido. El cuerpo pide una cosa y la cabeza otra.", op: [
-            { t: "Gym extra de tiro", fx: () => { subirCampo("tiro", 2); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: "Tiro +2. Las piernas pesan.", out: "neutro" }; } },
+            { t: "Gym extra de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El cuerpo no da más este año. Las piernas pesan.", out: "neutro" }; } },
             { t: "Descansar", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 14, 0, 100); sumarHinchada(3); return { det: "Forma arriba. La gente banca.", out: "neutro" }; } }
         ] },
         { t: "NOCHE DE CLÁSICO", d: "El Elegido dijo que tu equipo no existe.", op: [
@@ -151,7 +165,7 @@ function personales() {
             { t: "Dormir", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 10, 0, 100); return { det: "Fresco para el salto inicial.", out: "neutro" }; } }
         ] },
         { t: "PEDIDO DEL DT", d: "Quiere que labures el físico esta semana.", op: [
-            { t: "Meterle a la fuerza", fx: () => { subirCampo("rebote", 2); state.carrera.forma = clamp(state.carrera.forma - 6, 0, 100); return { det: "Fuerza +2.", out: "neutro" }; } },
+            { t: "Meterle a la fuerza", fx: () => { const sube = subirCampo("rebote", 1); state.carrera.forma = clamp(state.carrera.forma - 6, 0, 100); return { det: sube ? "Fuerza +" + sube + "." : "El cuerpo no da más este año.", out: "neutro" }; } },
             { t: "Guardarte", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 8, 0, 100); return { det: "Llegás entero al partido.", out: "neutro" }; } }
         ] },
         { t: "MICRÓFONO", d: "Te entrevistan a la salida. Todo el país mira.", op: [
@@ -412,9 +426,8 @@ function eventoActualCarrera() {
 }
 
 function subirCampo(clave, cuanto) {
-    if (!state.stats) return;
-    const campo = campoStat(clave);
-    state.stats[campo] = Math.min(99, (Number(state.stats[campo]) || 50) + cuanto);
+    if (!state.stats || typeof aplicarSubida !== "function") return 0;
+    return aplicarSubida(campoStat(clave), cuanto);
 }
 
 function sumarHinchada(delta) {
@@ -476,8 +489,8 @@ function resolverOpcion(op, pend, final) {
 function jugarMomento(clave, final, pend) {
     const chance = probCarrera(clave);
     const gano = Math.random() * 100 < chance;
-    const sube = gano ? 3 : 1;
-    subirCampo(clave, sube);
+    const sube = subirCampo(clave, gano ? 1 : 0);
+    const marca = sube ? nombreStat(clave) + " +" + sube : "sin subida: techo del año";
     const mult = final ? 1.5 : 1;
     state.partidos = (state.partidos || 0) + 1;
     state.partidas = (state.partidas || 0) + 1;
@@ -498,16 +511,16 @@ function jugarMomento(clave, final, pend) {
             if (typeof sumarTrofeo === "function") {
                 sumarTrofeo(eq && eq.liga === "NBA" ? "CAMPEÓN NBA" : "ANILLO DE CAMPEÓN");
             }
-            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. " + nombreStat(clave) + " +" + sube + ". Título de liga.";
+            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. " + marca + ". Título de liga.";
         } else {
-            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. " + nombreStat(clave) + " +" + sube + ".";
+            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. " + marca + ".";
         }
         tipo = "bien";
     } else {
         state.puntosCarrera += 4;
         state.carrera.xp += 3;
         sumarHinchada(-4);
-        detalle = "No entró. " + nombreStat(clave) + " +" + sube + ". El equipo te banca.";
+        detalle = "No entró. " + marca + ". El equipo te banca.";
         tipo = "mal";
     }
     reflejarCalibre();
@@ -523,8 +536,8 @@ function resolverPosesion(indice) {
     const op = pos.opciones[indice];
     const chance = probCarrera(op.stat);
     const gano = Math.random() * 100 < chance;
-    const sube = gano ? 3 : 1;
-    subirCampo(op.stat, sube);
+    const sube = subirCampo(op.stat, gano ? 1 : 0);
+    const marca = sube ? nombreStat(op.stat) + " +" + sube : nombreStat(op.stat) + " al techo del año";
     reflejarCalibre();
     const ptsNos = gano ? PUNTOS_JUGADA : 0;
     const ptsEllos = gano ? 0 : PUNTOS_JUGADA;
@@ -536,13 +549,13 @@ function resolverPosesion(indice) {
     else p.fallos += 1;
     const texto = relatoJugada(op.stat, gano, pos.lado);
     const titulo = gano ? (pos.lado === "defensa" ? "La paraste" : "Entró") : (pos.lado === "defensa" ? "Se te fue" : "No entró");
-    p.lineas.push(op.t + ": " + texto + " " + nombreStat(op.stat) + " +" + sube + ".");
+    p.lineas.push(op.t + ": " + texto + " " + marca + ".");
     p.eco = {
         ok: gano,
         titulo: titulo,
         jugada: op.t,
         texto: texto,
-        stat: nombreStat(op.stat) + " +" + sube,
+        stat: marca,
         chance: chance,
         puntos: ptsNos
     };
@@ -656,6 +669,7 @@ function siguienteTemporada() {
     const c = state.carrera;
     state.temporada = (Number(state.temporada) || 1) + 1;
     state.edad = (Number(state.edad) || 19) + 1;
+    if (typeof madurar === "function") state.flash = "Temporada " + state.temporada + ". " + madurar();
     c.momento = 0;
     c.usados = [];
     c.jugados = [];
@@ -734,10 +748,10 @@ function tableroCarrera(editable) {
     }).join("");
     return `<div class="caja">
         <div class="ficha-top">
-            <div class="ovr">${grlCarrera()}<small>MEDIA</small></div>
+            <div class="ovr">${state.calibre || 46}<small>CAL</small></div>
             <div>
                 <div class="nombre-jugador">${esc(state.nombre || "Rookie")} · ${esc(state.dorsal || "")}</div>
-                <p class="subficha">${eq ? esc(eq.nombre) + " · " + esc(eq.liga) : "Sin club"} · temp ${state.temporada || 1} · ${state.edad || 19} años</p>
+                <p class="subficha">${eq ? esc(eq.nombre) + " · " + esc(eq.liga) : "Sin club"} · temp ${state.temporada || 1} · media ${grlCarrera()}</p>
             </div>
             ${eq && typeof marcaLogo === "function" ? marcaLogo(eq) : ""}
         </div>
@@ -745,9 +759,10 @@ function tableroCarrera(editable) {
             <div><span>XP</span><b>${c.xp}</b></div>
             <div><span>FORMA</span><b>${Math.round(c.forma)}</b></div>
             <div><span>HINCHA</span><b>${state.hinchada}</b></div>
-            <div><span>TÍTULOS</span><b>${state.titulos || 0}</b></div>
+            <div><span>TITULOS</span><b>${state.titulos || 0}</b></div>
         </div>
         ${state.flash ? `<p class="flash">${esc(state.flash)}</p>` : ""}
+        ${typeof textoCrecimiento === "function" ? `<p class="nota">${esc(textoCrecimiento())}</p>` : ""}
         ${filas}
     </div>`;
 }
@@ -793,21 +808,21 @@ function pantallaPortada() {
 }
 
 function pantallaDraft() {
-    const liga = clubesLiga("LNB");
+    const liga = clubesSorteo();
     const eq = equipoActual();
-    if (!liga.length) {
+    if (!clubesLiga("LNB").length) {
         return marcoCarrera("LIGA LOCAL", `<h1>SIN<br><span>CLUBES</span></h1><p class="lead">No hay equipos de la LNB en la base. Revisá que la tabla equipos esté cargada.</p>`, "");
     }
     if (eq && state.carrera.draftListo) {
         return marcoCarrera("LIGA LOCAL", `
             ${tableroCarrera(false)}
             <h1>${esc(eq.nombre)}</h1>
-            <p class="lead">${esc(eq.ciudad || "")} · ${esc(eq.liga)} · pide ${eq.minima}. Un año acá y después el draft.</p>
+            <p class="lead">${esc(eq.ciudad || "")} · ${esc(eq.liga)}. Entrás al proyecto juvenil. El piso de ${eq.minima} es para los fichajes, no para este sorteo.</p>
         `, `<button class="btn" data-mc="debut">Arrancar el año</button>`);
     }
     return marcoCarrera("SORTEO", `
         <h1>CLUB<br><span>DE ORIGEN</span></h1>
-        <p class="lead">Salís sorteado en un club de la LNB. Son ${liga.length} equipos de la base.</p>
+        <p class="lead">El sorteo elige entre ${liga.length} clubes de la LNB a los que tu calibre puede llegar.</p>
         <div class="draft-nombre" id="draftName">???</div>
     `, `<button class="btn" data-mc="sortear">Sortear club</button>`);
 }
@@ -941,19 +956,21 @@ function pantallaOff() {
         return marcoCarrera("PRETEMPORADA", `
             ${tableroCarrera(true)}
             <h1>SEGUÍ<br><span>EL ENTRENO</span></h1>
-            <p class="lead">Quedaste a mitad de ${esc(ent.titulo)}. ${esc(ent.detalle)}. Si ganás, esa habilidad sube 4. Si perdés, sube 2.</p>
+            <p class="lead">Quedaste a mitad de ${esc(ent.titulo)}. ${esc(ent.detalle)}. Si ganás, esa habilidad sube 2, dentro del techo de tu edad. Si no llegás, no sube.</p>
         `, `<a class="btn" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}">Seguir<span class="sub">${esc(ent.titulo)}</span></a>
             <button class="btn ghost" data-mc="omitir">Omitir este entreno</button>
             ${ofertas}`);
     }
-    const juego = asegurarOfertaEntreno();
-    const ent = ENTRENO_CARRERA[juego];
+    const lista = Object.keys(ENTRENO_CARRERA).map((id) => {
+        const ent = ENTRENO_CARRERA[id];
+        return `<a class="opcion" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}"><strong>${esc(ent.titulo)}</strong><span>${esc(ent.detalle)}</span></a>`;
+    }).join("");
     return marcoCarrera("PRETEMPORADA", `
         ${tableroCarrera(true)}
         <h1>ENTRENAR</h1>
-        <p class="lead">Esta pretemporada te tocó ${esc(ent.titulo)}. ${esc(ent.detalle)}. Si ganás, esa habilidad sube 4. Si perdés, sube 2. La media es el promedio de las cinco.</p>
-    `, `<a class="btn" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}">Entrenar<span class="sub">${esc(ent.titulo)}</span></a>
-        ${ofertas}`);
+        <p class="lead">Elegí el minijuego de esta pretemporada. Si ganás, esa habilidad sube 2. Si no llegás, no sube. ${esc(typeof textoCrecimiento === "function" ? textoCrecimiento() : "El techo sube con los años.")}</p>
+        <div class="opciones">${lista}</div>
+    `, ofertas);
 }
 
 function pantallaOfertasCarrera() {
@@ -1075,9 +1092,9 @@ function empezarCarrera() {
 
 function sortearClub() {
     if (sorteoTimer) return;
-    const liga = clubesLiga("LNB");
+    const liga = clubesSorteo();
     if (!liga.length) {
-        state.flash = "No hay clubes de la LNB en la base.";
+        state.flash = "No hay clubes de la LNB a la altura de tu calibre.";
         render();
         return;
     }
@@ -1100,7 +1117,7 @@ function sortearClub() {
         state.carrera.paso = "draft";
         state.hinchada = Math.max(Number(state.hinchada) || 0, 60);
         state.quimica = state.hinchada;
-        state.flash = "Saliste sorteado en " + club.nombre + ".";
+        state.flash = "";
         persistir();
         render();
     }, 80);
@@ -1108,11 +1125,18 @@ function sortearClub() {
 
 function cobrarEntrenoCarrera(gano, juego) {
     const c = asegurarCarrera();
-    const mapa = { memoria: "tiro", simon: "pase", defensa: "defensa", reflejos: "velocidad" };
+    const mapa = {
+        memoria: "tiro",
+        simon: "pase",
+        defensa: "defensa",
+        reflejos: "velocidad",
+        tiro: "tiro",
+        pase: "pase",
+        dribling: "velocidad"
+    };
     const clave = mapa[juego];
-    const sube = gano ? 4 : 2;
+    const sube = clave ? subirCampo(clave, gano ? 2 : 0) : 0;
     const xp = gano ? 12 : 6;
-    if (clave) subirCampo(clave, sube);
     c.xp += xp;
     if (juego && c.jugados.indexOf(juego) === -1) c.jugados.push(juego);
     c.espera = null;
@@ -1122,8 +1146,8 @@ function cobrarEntrenoCarrera(gano, juego) {
     state.fase = "modocarrera";
     reflejarCalibre();
     const nombre = ENTRENO_CARRERA[juego] ? ENTRENO_CARRERA[juego].titulo : "Entrenamiento";
-    const stat = clave ? nombreStat(clave) + " +" + sube + ". " : "";
-    state.flash = nombre + ": " + (gano ? "victoria" : "derrota") + ". " + stat + "Media " + grlCarrera() + ". +" + xp + " XP.";
+    const stat = clave && sube ? nombreStat(clave) + " +" + sube + ". " : (gano && clave ? "Esa habilidad está en el techo del año. " : "");
+    state.flash = nombre + ": " + (gano ? "victoria" : "sin subida") + ". " + stat + "Calibre " + (state.calibre || 46) + ". +" + xp + " XP.";
     persistir();
 }
 
@@ -1143,6 +1167,7 @@ function ligarModoCarrera(raiz) {
                 c.momento = 0;
                 c.evento = null;
                 c.partido = null;
+                state.flash = "";
             }
             if (acc === "ofertas") {
                 c.paso = "ofertas";
@@ -1241,12 +1266,16 @@ function ligarModoCarrera(raiz) {
                 const delta = Number(nodo.dataset.d);
                 const campo = campoStat(clave);
                 const actual = Number(state.stats[campo]) || 50;
-                if (delta > 0 && c.xp >= COSTO_XP && actual < 99) {
-                    c.xp -= COSTO_XP;
-                    state.stats[campo] = actual + 1;
-                    reflejarCalibre();
-                    state.flash = nombreStat(clave) + " +1. Media " + grlCarrera() + ".";
-                } else if (delta < 0 && actual > 40) {
+                if (delta > 0 && c.xp >= COSTO_XP) {
+                    const sube = typeof aplicarSubida === "function" ? aplicarSubida(campo, 1) : 0;
+                    if (!sube) {
+                        state.flash = typeof textoTope === "function" ? textoTope() : "Esa habilidad está en el techo de tu edad.";
+                    } else {
+                        c.xp -= COSTO_XP;
+                        reflejarCalibre();
+                        state.flash = nombreStat(clave) + " +" + sube + ". Media " + grlCarrera() + ".";
+                    }
+                } else if (delta < 0 && actual > 24) {
                     c.xp += COSTO_XP;
                     state.stats[campo] = actual - 1;
                     reflejarCalibre();

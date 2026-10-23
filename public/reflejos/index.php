@@ -4,8 +4,8 @@ require 'conexion.php';
 $nombre = trim($_GET["nombre"] ?? "") !== "" ? $_GET["nombre"] : "Jugador";
 
 // Colores por defecto (si no se eligió equipo o el id no existe)
-$colorPrimario = '#f59e0b';
-$colorSecundario = '#b96f35';
+$colorPrimario = '#d0d0d0';
+$colorSecundario = '#1a3a6b';
 $equipoNombre = null;
 $equipoId = isset($_GET['equipo']) ? intval($_GET['equipo']) : null;
 
@@ -40,7 +40,8 @@ if ($equipoId && $pdo instanceof PDO) {
 
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="../css/mini-fit.css?v=8">
-    <script src="../js/mini-fit.js?v=5"></script>
+    <link rel="stylesheet" href="../css/mini-shell.css?v=3">
+    <script src="../js/mini-fit.js?v=8"></script>
 
     <style>
         :root {
@@ -51,7 +52,7 @@ if ($equipoId && $pdo instanceof PDO) {
 </head>
 <body>
     <main class="contenedor">
-        <h1>🏀 Desafío de Reflejos</h1>
+        <h1>Desafio de Reflejos</h1>
         <p class="subtitulo">
             Jugador: <strong><?php echo htmlspecialchars($nombre); ?></strong>
             <?php if ($equipoNombre): ?>
@@ -60,10 +61,10 @@ if ($equipoId && $pdo instanceof PDO) {
         </p>
 
         <section class="panel">
-            <div>⏱️ Tiempo: <span id="tiempo">30</span>s</div>
-            <div>🎯 Aciertos: <span id="aciertos">0</span></div>
-            <div>⚡ Promedio: <span id="promedio">-</span></div>
-            <div>❤️ Vidas: <span id="vidas">3</span></div>
+            <div>Tiempo: <span id="tiempo">30</span>s</div>
+            <div>Aciertos: <span id="aciertos">0</span></div>
+            <div>Promedio: <span id="promedio">-</span></div>
+            <div>Vidas: <span id="vidas">3</span></div>
         </section>
 
         <div id="cancha">
@@ -85,6 +86,6 @@ if ($equipoId && $pdo instanceof PDO) {
         </div>
     </div>
 
-    <script src="js/juego.js?v=4"></script>
+    <script src="js/juego.js?v=5"></script>
 </body>
 </html>

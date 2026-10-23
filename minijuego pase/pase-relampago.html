@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pase Relámpago</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0b0f24;color:#f4ead5;font:10px/1.8 'Press Start 2P','Courier New',monospace;display:flex;justify-content:center;padding:16px 8px}
+.juego{width:100%;max-width:420px}
+.hud{display:flex;justify-content:space-between;margin-bottom:12px}
+.hud b{color:#ffcc33;font-weight:400}
+.marco{position:relative;background:#6b4226;padding:12px;box-shadow:inset 0 0 0 4px #3d2314,inset 0 0 0 8px #8f5b34,0 0 0 4px #000}
+canvas{display:block;width:100%;image-rendering:pixelated;touch-action:manipulation;background:#000}
+.capa{position:absolute;inset:12px;background:rgba(11,15,36,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:16px}
+.capa[hidden]{display:none}
+.capa h1{font-size:15px;font-weight:400;margin:0;color:#ffcc33}
+.capa p{margin:0;font-size:9px;line-height:2}
+.v{color:#5be37d}.r{color:#ff6b6b}
+button{font:inherit;font-size:10px;padding:12px 16px;background:#ffcc33;color:#1b1020;border:0;box-shadow:0 4px 0 #8a5a00;cursor:pointer}
+button:active{transform:translateY(4px);box-shadow:none}
+button:focus-visible{outline:4px solid #fff;outline-offset:2px}
+.ayuda{margin:14px 0 0;font-size:8px;color:#7f89b5;text-align:center}
+</style>
+</head>
+<body>
+<main class="juego">
+  <div class="hud"><span>Pases <b id="pts">0</b></span><span>Mejor <b id="mejor">0</b></span></div>
+  <div class="marco">
+    <canvas id="cv" aria-label="Cancha vista desde arriba. Tocá a un compañero para pasarle la pelota."></canvas>
+    <div class="capa" id="capa">
+      <h1 id="tit">Pase Relámpago</h1>
+      <p id="txt">Pasá la pelota antes de que se acabe la posesión.<br>Si un defensor toca el pase, la perdés.<br><span class="v">Verde: pase libre.</span><br><span class="r">Rojo: pase en riesgo.</span></p>
+      <button id="ok" type="button">Jugar</button>
+    </div>
+  </div>
+  <p class="ayuda">Tocá a un compañero o usá las teclas 1, 2 y 3</p>
+</main>
+<script>
+(() => {
+  const W = 160, H = 200;
+  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+  cv.width = W; cv.height = H;
+  const $ = id => document.getElementById(id);
+  const SPOTS = [];
+  for (const y of [55, 95, 135, 175]) for (const x of [28, 80, 132]) SPOTS.push([x, y]);
+  const DIG = {1:'010110010010111', 2:'111001111100111', 3:'111001111001111'};
+  let mejor = 0;
+  try { mejor = +localStorage.getItem('pase-relampago') || 0; } catch (e) {}
+  $('mejor').textContent = mejor;
+  let st = 'inicio', pts = 0, tiempo = 1, max = 1, jug = [], defs = [], hold = 0, bola = null, last = 0;
+
+  const limite = () => Math.max(1, 2.4 - pts * 0.04);
+  const rec = () => jug.map((_, i) => i).filter(i => i !== hold).sort((a, b) => jug[a].tx - jug[b].tx);
+  function mezclar(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function distSeg(px, py, ax, ay, bx, by){
+    const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l));
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  }
+  function nuevoDef(){ defs.push({x: 20 + Math.random() * 120, y: 50 + Math.random() * 130, a: Math.random() * 6.28}); }
+  function reubicar(){
+    const h = jug[hold];
+    const libres = mezclar(SPOTS.filter(s => Math.hypot(s[0] - h.tx, s[1] - h.ty) > 30));
+    let k = 0;
+    jug.forEach((j, i) => { if (i !== hold) { j.tx = libres[k][0]; j.ty = libres[k][1]; k++; } });
+  }
+  function empezar(){
+    pts = 0; $('pts').textContent = 0; defs = []; nuevoDef(); nuevoDef(); bola = null; hold = 0;
+    jug = [0, 1, 2, 3].map(() => ({x: 80, y: 165, tx: 80, ty: 165}));
+    reubicar();
+    jug.forEach(j => { j.x = j.tx; j.y = j.ty; });
+    max = tiempo = limite(); st = 'juego'; $('capa').hidden = true;
+    last = performance.now(); requestAnimationFrame(loop);
+  }
+  function pasar(i){
+    if (st !== 'juego' || bola) return;
+    const h = jug[hold], r = jug[i];
+    bola = {ax: h.x, ay: h.y, bx: r.tx, by: r.ty, x: h.x, y: h.y, p: 0, to: i};
+  }
+  function fin(m){
+    st = 'fin';
+    const nuevo = pts > mejor;
+    if (nuevo) { mejor = pts; try { localStorage.setItem('pase-relampago', mejor); } catch (e) {} $('mejor').textContent = mejor; }
+    $('tit').textContent = m;
+    $('txt').textContent = 'Pases: ' + pts + (nuevo ? '. ¡Nuevo récord!' : '');
+    $('ok').textContent = 'Jugar de nuevo';
+    $('capa').hidden = false; $('ok').focus(); dibujar();
+  }
+  function update(dt){
+    jug.forEach(j => { const k = Math.min(1, dt * 10); j.x += (j.tx - j.x) * k; j.y += (j.ty - j.y) * k; });
+    const v = Math.min(26 + pts * 1.4, 60);
+    defs.forEach(d => {
+      d.x += Math.cos(d.a) * v * dt; d.y += Math.sin(d.a) * v * dt;
+      if (d.x < 8 || d.x > W - 8) { d.a = Math.PI - d.a; d.x = Math.max(8, Math.min(W - 8, d.x)); }
+      if (d.y < 24 || d.y > H - 8) { d.a = -d.a; d.y = Math.max(24, Math.min(H - 8, d.y)); }
+      if (Math.random() < dt * 0.6) d.a += (Math.random() - 0.5) * 1.6;
+    });
+    if (bola) {
+      bola.p += dt / 0.3;
+      const p = Math.min(1, bola.p);
+      bola.x = bola.ax + (bola.bx - bola.ax) * p; bola.y = bola.ay + (bola.by - bola.ay) * p;
+      if (defs.some(d => Math.hypot(d.x - bola.x, d.y - bola.y) < 8)) return fin('¡Te robaron el pase!');
+      if (bola.p >= 1) {
+        hold = bola.to; jug[hold].x = jug[hold].tx; jug[hold].y = jug[hold].ty; bola = null;
+        pts++; $('pts').textContent = pts;
+        if (pts % 6 === 0 && defs.length < 5) nuevoDef();
+        reubicar(); max = tiempo = limite();
+      }
+    } else {
+      tiempo -= dt;
+      if (tiempo <= 0) fin('Se acabó la posesión');
+    }
+  }
+
+  /* ---------- dibujo ---------- */
+  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
+  function marco(x, y, w, h, c){ R(x, y, w, 1, c); R(x, y + h - 1, w, 1, c); R(x, y, 1, h, c); R(x + w - 1, y, 1, h, c); }
+  function arco(cx, cy, rad, c){ for (let a = 0; a <= Math.PI; a += 0.02) R(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, 1, 1, c); }
+  function linea(ax, ay, bx, by, c){
+    const n = Math.max(1, Math.floor(Math.hypot(bx - ax, by - ay) / 5));
+    for (let i = 0; i <= n; i++) R(ax + (bx - ax) * i / n - 1, ay + (by - ay) * i / n - 1, 2, 2, c);
+  }
+  function digito(n, x, y){
+    const s = DIG[n];
+    for (let i = 0; i < 15; i++) if (s[i] === '1') R(x + (i % 3), y + Math.floor(i / 3), 1, 1, '#fff');
+  }
+  function pelota(x, y){ R(x, y, 4, 4, '#f08a24'); R(x, y + 2, 4, 1, '#3a1a08'); R(x + 2, y, 1, 4, '#3a1a08'); }
+  function persona(x, y, camisa){
+    R(x - 4, y + 3, 8, 1, 'rgba(0,0,0,.25)');
+    R(x - 2, y - 9, 4, 1, '#2b1b12'); R(x - 2, y - 8, 4, 3, '#f1c27d');
+    R(x - 3, y - 5, 6, 5, camisa);
+    R(x - 3, y, 2, 3, '#1b1020'); R(x + 1, y, 2, 3, '#1b1020');
+  }
+  function dibujar(){
+    const L = '#f4ead5';
+    R(0, 0, W, H, '#c98a4b');
+    for (let x = 0; x < W; x += 16) R(x, 0, 1, H, '#bb7d41');
+    R(52, 0, 56, 62, '#a8662f');
+    marco(0, 0, W, H, L); marco(52, 0, 56, 62, L);
+    arco(80, 62, 28, L); arco(80, 12, 72, L); R(8, 0, 1, 12, L); R(151, 0, 1, 12, L);
+    R(70, 4, 20, 1, L); marco(77, 8, 6, 6, '#f08a24');
+    const h = jug[hold];
+    if (!bola) rec().forEach(i => {
+      const r = jug[i];
+      const riesgo = defs.some(d => distSeg(d.x, d.y, h.x, h.y, r.tx, r.ty) < 10);
+      linea(h.x, h.y - 4, r.tx, r.ty - 4, riesgo ? '#e03a3a' : '#5be37d');
+    });
+    const ents = jug.map((j, i) => ({y: j.y, f: () => {
+      persona(j.x, j.y, '#ffcc33');
+      if (i === hold && !bola) pelota(j.x + 4, j.y - 3);
+      else if (i !== hold) digito(rec().indexOf(i) + 1, j.x - 1, j.y - 16);
+    }})).concat(defs.map(d => ({y: d.y, f: () => persona(d.x, d.y, '#4a7bff')})));
+    ents.sort((a, b) => a.y - b.y).forEach(e => e.f());
+    if (bola) { R(bola.x - 2, bola.y + 3, 4, 1, 'rgba(0,0,0,.3)'); pelota(bola.x - 2, bola.y - 4); }
+    if (st === 'juego') R(0, H - 4, W * Math.max(0, tiempo) / max, 4, tiempo / max < 0.3 ? '#e03a3a' : '#ffcc33');
+  }
+  function loop(n){
+    if (st !== 'juego') return;
+    const dt = Math.min(0.05, (n - last) / 1000); last = n;
+    update(dt);
+    if (st === 'juego') { dibujar(); requestAnimationFrame(loop); }
+  }
+
+  /* ---------- controles ---------- */
+  cv.addEventListener('pointerdown', e => {
+    if (st !== 'juego') return;
+    const b = cv.getBoundingClientRect();
+    const x = (e.clientX - b.left) * W / b.width, y = (e.clientY - b.top) * H / b.height;
+    let mejorI = -1, bd = 22;
+    rec().forEach(i => { const d = Math.hypot(jug[i].x - x, jug[i].y - y); if (d < bd) { bd = d; mejorI = i; } });
+    if (mejorI >= 0) pasar(mejorI);
+  });
+  addEventListener('keydown', e => {
+    if (st !== 'juego' || !'123'.includes(e.key)) return;
+    const i = rec()[+e.key - 1];
+    if (i !== undefined) pasar(i);
+  });
+  $('ok').addEventListener('click', empezar);
+
+  // primer cuadro de fondo
+  jug = [0, 1, 2, 3].map(i => ({x: SPOTS[i * 3][0], y: SPOTS[i * 3][1], tx: SPOTS[i * 3][0], ty: SPOTS[i * 3][1]}));
+  defs = [{x: 50, y: 110, a: 0}, {x: 110, y: 80, a: 0}];
+  dibujar();
+})();
+</script>
+</body>
+</html>

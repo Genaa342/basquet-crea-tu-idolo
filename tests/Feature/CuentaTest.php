@@ -155,6 +155,65 @@ class CuentaTest extends TestCase
         $this->assertSame(0, Jugador::query()->where('nombre', 'Cierra')->count());
     }
 
+    public function test_una_revision_vieja_no_pisa_la_carrera(): void
+    {
+        $user = User::factory()->create();
+        $alta = $this->actingAs($user)->postJson('/api/guardar.php', $this->ficha('Titular'));
+        $alta->assertOk()->assertJsonPath('revision', 1);
+        $id = $alta->json('id');
+
+        $this->actingAs($user)
+            ->postJson('/api/guardar.php', $this->ficha('Titular', [
+                'id' => $id,
+                'revision' => 0,
+                'calibre' => 50,
+            ]))
+            ->assertStatus(409)
+            ->assertJsonPath('revision', 1);
+
+        $ficha = json_decode(Jugador::query()->find($id)->ficha, true);
+        $this->assertSame(46, $ficha['calibre']);
+        $this->assertSame(1, $ficha['revision']);
+    }
+
+    public function test_un_salto_de_calibre_o_un_novato_alto_se_rechaza(): void
+    {
+        $user = User::factory()->create();
+        $alta = $this->actingAs($user)->postJson('/api/guardar.php', $this->ficha('Titular'));
+        $alta->assertOk();
+        $id = $alta->json('id');
+
+        $this->actingAs($user)
+            ->postJson('/api/guardar.php', $this->ficha('Titular', [
+                'id' => $id,
+                'calibre' => 87,
+            ]))
+            ->assertStatus(422);
+
+        $this->actingAs($user)
+            ->postJson('/api/guardar.php', $this->ficha('Titular', [
+                'id' => $id,
+                'calibre' => 86,
+                'stats' => [
+                    'velocidad' => 75,
+                    'tiro' => 85,
+                    'fuerza' => 45,
+                    'control' => 85,
+                    'defensa' => 55,
+                ],
+            ]))
+            ->assertStatus(422);
+
+        $otro = User::factory()->create();
+        $this->actingAs($otro)
+            ->postJson('/api/guardar.php', $this->ficha('Inflado', ['calibre' => 61]))
+            ->assertStatus(422);
+
+        $ficha = json_decode(Jugador::query()->find($id)->ficha, true);
+        $this->assertSame(46, $ficha['calibre']);
+        $this->assertSame(60, $ficha['stats']['control']);
+    }
+
     public function test_sin_retiro_no_hay_manager(): void
     {
         $user = User::factory()->create();

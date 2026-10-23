@@ -1,0 +1,230 @@
+/* Marco común de los minijuegos. En PC el tablero usa el alto de la ventana. */
+html.mini-fit body.mini-libre.mini-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-items: stretch;
+    justify-items: stretch;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    gap: 10px;
+    padding: 14px 18px 16px;
+    background:
+        linear-gradient(180deg, rgba(2, 4, 12, 0.42), rgba(2, 4, 12, 0.78)),
+        url("/assets/fondo-calle.jpg?v=2") center center / cover no-repeat,
+        #02040c;
+    color: #f4f7ff;
+    font-family: Outfit, "Segoe UI", sans-serif;
+}
+
+.mini-top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    min-height: 36px;
+    padding-right: 120px;
+    color: #d0d0d0;
+    font-family: "Press Start 2P", "Courier New", monospace;
+    font-size: 12px;
+}
+
+.mini-top span {
+    color: #f4f7ff;
+    font-family: Outfit, "Segoe UI", sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.mini-stage {
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    justify-self: stretch;
+    overflow: hidden;
+    border: 4px solid #d0d0d0;
+    background: #07111f;
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.45);
+}
+
+.mini-ayuda {
+    display: none;
+}
+
+.mini-shell .juego,
+.mini-shell main {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+}
+
+.mini-shell .juego {
+    display: flex;
+    flex-direction: column;
+}
+
+.mini-shell .hud {
+    display: flex;
+    justify-content: space-between;
+    flex: none;
+    margin: 0;
+    padding: 10px 16px 8px;
+    color: #f4f7ff;
+    font-family: Outfit, "Segoe UI", sans-serif;
+    font-size: 18px;
+}
+
+.mini-shell .hud b { color: #d0d0d0; }
+
+.mini-shell .marco,
+.mini-shell .stage {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+}
+
+.mini-shell .stage { height: 100%; }
+.mini-shell .marco { height: auto; }
+
+.mini-shell .marco canvas,
+.mini-shell .stage canvas,
+html.mini-fit body.mini-shell #juego.ptj,
+html.mini-fit body.mini-shell #juego.ptj.ptj-wide {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto !important;
+}
+
+html.mini-fit body.mini-shell #juego.ptj canvas,
+.mini-shell .marco canvas,
+.mini-shell .stage canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: #07111f;
+    border: 0 !important;
+}
+
+.mini-shell .capa,
+.mini-shell #overlay,
+.mini-shell .ptj-ov {
+    background: rgba(7, 17, 31, 0.9) !important;
+    color: #f4f7ff;
+}
+
+.mini-shell .capa h1,
+.mini-shell #overlay h1,
+.mini-shell .ptj-ov h1 {
+    margin: 0 0 12px;
+    color: #d0d0d0 !important;
+    font-family: "Press Start 2P", "Courier New", monospace !important;
+    font-size: clamp(16px, 2vw, 28px) !important;
+    line-height: 1.45 !important;
+    text-shadow: none !important;
+}
+
+.mini-shell .capa p,
+.mini-shell #ov-text,
+.mini-shell .ptj-ov p,
+.mini-shell .ayuda {
+    max-width: 46rem;
+    color: #f4f7ff;
+    font-family: Outfit, "Segoe UI", sans-serif !important;
+    font-size: clamp(16px, 1.5vw, 22px) !important;
+    line-height: 1.45 !important;
+}
+
+.mini-shell button,
+.mini-shell .ptj-ov button,
+.mini-shell #overlay button {
+    min-height: 52px;
+    padding: 12px 22px !important;
+    border: 3px solid #f4f7ff !important;
+    background: #d0d0d0 !important;
+    color: #1a1200 !important;
+    font-family: Outfit, "Segoe UI", sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 700;
+    box-shadow: none !important;
+    cursor: pointer;
+}
+
+.mini-shell #ranking,
+.mini-shell #save-form { display: none !important; }
+
+html.mini-fit body.mini-shell button.mini-volver {
+    top: 16px;
+    right: 20px;
+    left: auto;
+    background: #12151c;
+    z-index: 40;
+}
+
+@media (min-width: 1000px) {
+    html.mini-fit body {
+        background:
+            linear-gradient(180deg, rgba(2, 4, 12, 0.5), rgba(2, 4, 12, 0.78)),
+            url("/assets/fondo-calle.jpg?v=2") center center / cover no-repeat,
+            #02040c !important;
+    }
+
+    html.mini-fit .game-wrapper,
+    html.mini-fit .game-container,
+    html.mini-fit .contenedor {
+        width: min(1320px, 96vw) !important;
+        max-width: none !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-left: 4px solid #d0d0d0;
+        border-right: 4px solid #d0d0d0;
+    }
+
+    html.mini-fit #start-screen {
+        width: min(1320px, 96vw);
+    }
+
+    html.mini-fit .start-content {
+        width: min(760px, 94%);
+    }
+
+    html.mini-fit h1,
+    html.mini-fit .section-title h1,
+    html.mini-fit #start-screen h1 {
+        font-size: clamp(22px, 2.4vw, 40px) !important;
+    }
+
+    html.mini-fit .arena,
+    html.mini-fit #cancha {
+        flex: 1 1 auto;
+        min-height: 0;
+        border: 4px solid #d0d0d0;
+        border-radius: 0;
+    }
+
+    html.mini-fit .game {
+        border: 4px solid #d0d0d0;
+    }
+
+    html.mini-fit button.mini-volver {
+        left: auto;
+        right: 18px;
+        top: 12px;
+    }
+}

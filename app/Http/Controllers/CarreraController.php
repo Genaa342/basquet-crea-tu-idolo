@@ -98,6 +98,20 @@ class CarreraController extends Controller
         }
 
         $stats = is_array($datos['stats'] ?? null) ? $datos['stats'] : [];
+        foreach (['velocidad', 'tiro', 'fuerza', 'control', 'defensa'] as $clave) {
+            $valor = (int) ($stats[$clave] ?? 50);
+            if ($valor < 1 || $valor > 99) {
+                return response()->json(['ok' => false, 'error' => 'Esas habilidades no cierran.'], 422);
+            }
+            $stats[$clave] = $valor;
+        }
+        $datos['stats'] = $stats;
+        $calibre = (int) ($datos['calibre'] ?? 46);
+        if ($calibre < 1 || $calibre > 99) {
+            return response()->json(['ok' => false, 'error' => 'Ese calibre no existe.'], 422);
+        }
+        $datos['calibre'] = $calibre;
+
         $id = (int) ($datos['id'] ?? 0);
         $retiro = ! empty($datos['retirado']) || ($datos['fase'] ?? '') === 'retiro';
         $jugador = $id > 0 ? Jugador::find($id) : null;
@@ -116,6 +130,37 @@ class CarreraController extends Controller
                 }
             }
         }
+
+        $previa = [];
+        if ($jugador && $jugador->ficha) {
+            $decodificada = json_decode($jugador->ficha, true);
+            $previa = is_array($decodificada) ? $decodificada : [];
+        }
+        $revGuardada = (int) ($previa['revision'] ?? 0);
+        if ($jugador && array_key_exists('revision', $datos) && (int) $datos['revision'] !== $revGuardada) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Otra partida guardó después. Volvé a entrar para no pisar ese avance.',
+                'revision' => $revGuardada,
+                'ficha' => $jugador->fichaLista(),
+            ], 409);
+        }
+        if ($previa !== []) {
+            $antes = (int) ($previa['calibre'] ?? 46);
+            if ($calibre > $antes + 40) {
+                return response()->json(['ok' => false, 'error' => 'Ese salto de calibre no sale de un partido.'], 422);
+            }
+            $viejas = is_array($previa['stats'] ?? null) ? $previa['stats'] : [];
+            foreach (['velocidad', 'tiro', 'fuerza', 'control', 'defensa'] as $clave) {
+                $viejo = (int) ($viejas[$clave] ?? $stats[$clave]);
+                if ($stats[$clave] > $viejo + 24) {
+                    return response()->json(['ok' => false, 'error' => 'Esa habilidad subió más de lo que permite un entrenamiento.'], 422);
+                }
+            }
+        } elseif (! $user->es_manager && $calibre > 60) {
+            return response()->json(['ok' => false, 'error' => 'Un novato no arranca con ese calibre.'], 422);
+        }
+        $datos['revision'] = $revGuardada + 1;
 
         $attrs = [
             'nombre' => $nombre,
@@ -143,7 +188,7 @@ class CarreraController extends Controller
         $jugador->ficha = json_encode($datos, JSON_UNESCAPED_UNICODE);
         $jugador->save();
 
-        return response()->json(['ok' => true, 'id' => $jugador->id]);
+        return response()->json(['ok' => true, 'id' => $jugador->id, 'revision' => $datos['revision']]);
     }
 
     /**
