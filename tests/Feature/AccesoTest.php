@@ -88,6 +88,48 @@ class AccesoTest extends TestCase
         $this->assertNotNull(User::query()->where('email', 'nico@example.com')->first());
     }
 
+    public function test_un_usuario_nuevo_entra_sin_pedir_una_cuenta(): void
+    {
+        $this->postJson('/auth/registrar', [
+            'usuario' => 'Franco',
+            'password' => 'cancha-9',
+        ])->assertOk()->assertJsonPath('correo', true);
+
+        $this->assertAuthenticated();
+        $cuenta = User::query()->where('usuario', 'franco')->first();
+        $this->assertNotNull($cuenta);
+        $this->assertSame('Franco', $cuenta->name);
+        $this->assertNull($this->getJson('/api/sesion')->json('user.email'));
+        $this->assertSame('franco', $this->getJson('/api/sesion')->json('user.usuario'));
+
+        $this->postJson('/auth/salir')->assertOk();
+        $this->assertGuest();
+
+        $this->postJson('/auth/entrar', [
+            'usuario' => 'Franco',
+            'password' => 'cancha-9',
+        ])->assertOk();
+
+        $this->postJson('/auth/salir')->assertOk();
+
+        $this->postJson('/auth/entrar', [
+            'usuario' => 'franco',
+            'password' => 'otra',
+        ])->assertStatus(422)
+            ->assertJsonPath('errors.usuario.0', 'Usuario o contraseña incorrectos.');
+
+        $this->postJson('/auth/registrar', [
+            'usuario' => 'FRANCO',
+            'password' => 'cancha-9',
+        ])->assertStatus(422)
+            ->assertJsonPath('errors.usuario.0', 'Ese usuario ya existe. Entrá con tu contraseña.');
+
+        $this->postJson('/auth/registrar', [
+            'usuario' => 'ab',
+            'password' => 'cancha-9',
+        ])->assertStatus(422);
+    }
+
     public function test_un_email_repetido_o_una_clave_corta_no_crea_cuenta(): void
     {
         User::factory()->create(['email' => 'luka@example.com']);
@@ -121,5 +163,87 @@ class AccesoTest extends TestCase
             'password' => 'no-es',
         ])->assertStatus(422)
             ->assertJsonPath('errors.email.0', 'Esa cuenta entra con Google.');
+    }
+
+    public function test_equivocarse_de_clave_no_bloquea_el_registro(): void
+    {
+        User::factory()->create([
+            'email' => 'luka@example.com',
+            'password' => 'cancha-9',
+        ]);
+
+        for ($i = 0; $i < 8; $i++) {
+            $this->postJson('/auth/entrar', [
+                'email' => 'luka@example.com',
+                'password' => 'mala',
+            ])->assertStatus(422);
+        }
+
+        $bloqueado = $this->postJson('/auth/entrar', [
+            'email' => 'luka@example.com',
+            'password' => 'mala',
+        ]);
+        $bloqueado->assertStatus(429);
+        $this->assertStringNotContainsString('exception', $bloqueado->getContent());
+        $this->assertStringNotContainsString('vendor', $bloqueado->getContent());
+        $bloqueado->assertJsonPath('errors.email.0', 'Demasiados intentos. Esperá un minuto y probá de nuevo.');
+
+        $this->postJson('/auth/registrar', [
+            'nombre' => 'Ana',
+            'email' => 'ana@example.com',
+            'password' => 'cancha-9',
+        ])->assertOk();
+    }
+
+    public function test_se_puede_elegir_una_contrasena_nueva_sin_correo(): void
+    {
+        $usuario = User::factory()->create([
+            'email' => 'luka@example.com',
+            'password' => 'cancha-9',
+        ]);
+
+        $pedido = $this->postJson('/auth/olvide', ['email' => 'luka@example.com']);
+        $pedido->assertOk()->assertJsonPath('correo', false);
+        $codigo = $pedido->json('codigo');
+        $this->assertSame(6, strlen((string) $codigo));
+
+        $this->postJson('/auth/olvide', ['email' => 'nadie@example.com'])
+            ->assertOk()
+            ->assertJsonPath('codigo', null);
+
+        $this->postJson('/auth/restablecer', [
+            'email' => 'luka@example.com',
+            'codigo' => '000000',
+            'password' => 'tablero',
+        ])->assertStatus(422);
+
+        $this->postJson('/auth/restablecer', [
+            'email' => 'luka@example.com',
+            'codigo' => $codigo,
+            'password' => 'tablero',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('tablero', $usuario->fresh()->password));
+        $this->assertAuthenticated();
+    }
+
+    public function test_la_contrasena_se_cambia_dentro_de_la_cuenta(): void
+    {
+        $usuario = User::factory()->create([
+            'email' => 'luka@example.com',
+            'password' => 'cancha-9',
+        ]);
+
+        $this->actingAs($usuario)->postJson('/auth/clave', [
+            'actual' => 'no-es',
+            'password' => 'tablero',
+        ])->assertStatus(422);
+
+        $this->actingAs($usuario)->postJson('/auth/clave', [
+            'actual' => 'cancha-9',
+            'password' => 'tablero',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('tablero', $usuario->fresh()->password));
     }
 }

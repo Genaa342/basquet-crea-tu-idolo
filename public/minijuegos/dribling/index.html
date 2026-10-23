@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/mini-fit.css?v=9">
-<link rel="stylesheet" href="/css/mini-shell.css?v=3">
-<script src="/js/mini-fit.js?v=8"></script>
+<link rel="stylesheet" href="/css/mini-fit.css?v=10">
+<link rel="stylesheet" href="/css/mini-shell.css?v=4">
+<script src="/js/mini-fit.js?v=9"></script>
 <style>
   :root {
     --ink: #0f0f1b;
@@ -139,7 +139,11 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch { /* sin almacenamiento */ } }
   };
 
-  const API = 'score.php?game=runner';
+  const API = '/api/minijuego/puntaje?game=runner';
+  function tokenCsrf() {
+    const fila = document.cookie.split('; ').find((item) => item.indexOf('XSRF-TOKEN=') === 0);
+    return fila ? decodeURIComponent(fila.slice('XSRF-TOKEN='.length)) : '';
+  }
   const META = 200;
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -514,9 +518,21 @@
     try {
       const res = await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, score: sc })
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-XSRF-TOKEN': tokenCsrf()
+        },
+        body: JSON.stringify({ score: sc })
       });
+      if (res.status === 401) {
+        if (!document.getElementById('aviso-cuenta')) {
+          rankEl.insertAdjacentHTML('beforebegin', '<p id="aviso-cuenta">Entrá con tu cuenta para figurar en el ranking.</p>');
+        }
+        throw new Error('401');
+      }
       if (!res.ok) throw new Error(res.status);
       renderRanking(await res.json());
     } catch {

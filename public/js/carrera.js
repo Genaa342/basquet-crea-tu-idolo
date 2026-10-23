@@ -94,9 +94,7 @@ function grlCarrera() {
 function reflejarCalibre() {
     const media = grlCarrera();
     const actual = Number(state.calibre) || 46;
-    const techo = state.tipo === "profesional" || typeof techoCalibre !== "function" ? 99 : techoCalibre(state.edad);
-    if (actual >= techo) return;
-    state.calibre = Math.min(techo, Math.max(actual, media));
+    state.calibre = Math.min(99, Math.max(actual, media));
 }
 
 function clubesLiga(liga) {
@@ -104,11 +102,8 @@ function clubesLiga(liga) {
 }
 
 function clubesSorteo() {
-    const liga = clubesLiga("LNB");
-    const techo = (Number(state.calibre) || 46) + 8;
-    const cerca = liga.filter((eq) => Number(eq.minima) <= techo);
-    if (cerca.length) return cerca;
-    return liga.slice().sort((a, b) => Number(a.minima) - Number(b.minima)).slice(0, 5);
+    // El bolillero inicial es toda la LNB. Cada club tiene la misma chance.
+    return clubesLiga("LNB");
 }
 
 const COSTO_XP = 5;
@@ -118,6 +113,28 @@ function probCarrera(clave) {
     const hincha = Number(state.hinchada) || 50;
     const base = 8 + valorStat(clave) * 0.82 + (forma - 50) * 0.08 + (hincha - 50) * 0.04;
     return clamp(Math.round(base), 8, 96);
+}
+
+// La jugada sale de una sola estadística y el techo queda en 68.
+// Un 99 también falla, y de 80 para arriba no se puede repetir en el partido.
+const UMBRAL_STAT_ALTA = 80;
+
+function probStat(clave) {
+    const stat = valorStat(clave);
+    return clamp(Math.round(26 + stat * 0.42), 16, 68);
+}
+
+function statAlta(clave) {
+    return valorStat(clave) >= UMBRAL_STAT_ALTA;
+}
+
+function chanceRepetida(clave) {
+    return clamp(Math.round(probStat(clave) * 0.6), 12, 42);
+}
+
+function gastadasPartido(p) {
+    if (!p.gastadas) p.gastadas = [];
+    return p.gastadas;
 }
 
 function tweetsCarrera(tipo) {
@@ -147,7 +164,7 @@ function debuts() {
         ] },
         { t: "CLÁSICO LOCAL", d: "Se juega con los dientes apretados. Varias posesiones, y en cada una decidís vos.", partido: true },
         { t: "SEMANA LARGA", d: "Tres partidos en siete días. El cuerpo avisa.", op: [
-            { t: "Gym de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El cuerpo no da más este año. Las piernas pesan.", out: "neutro" }; } },
+            { t: "Gym de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El tiro ya está en 99. Las piernas pesan.", out: "neutro" }; } },
             { t: "Descansar", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 14, 0, 100); return { det: "Llegás fresco.", out: "neutro" }; } }
         ] },
         { t: "CIERRE DEL AÑO", d: "Último partido antes del draft. Hay scouts en la tribuna.", partido: true }
@@ -157,7 +174,7 @@ function debuts() {
 function personales() {
     return [
         { t: "DÍA LIBRE", d: "Mañana hay partido. El cuerpo pide una cosa y la cabeza otra.", op: [
-            { t: "Gym extra de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El cuerpo no da más este año. Las piernas pesan.", out: "neutro" }; } },
+            { t: "Gym extra de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El tiro ya está en 99. Las piernas pesan.", out: "neutro" }; } },
             { t: "Descansar", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 14, 0, 100); sumarHinchada(3); return { det: "Forma arriba. La gente banca.", out: "neutro" }; } }
         ] },
         { t: "NOCHE DE CLÁSICO", d: "El Elegido dijo que tu equipo no existe.", op: [
@@ -165,7 +182,7 @@ function personales() {
             { t: "Dormir", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 10, 0, 100); return { det: "Fresco para el salto inicial.", out: "neutro" }; } }
         ] },
         { t: "PEDIDO DEL DT", d: "Quiere que labures el físico esta semana.", op: [
-            { t: "Meterle a la fuerza", fx: () => { const sube = subirCampo("rebote", 1); state.carrera.forma = clamp(state.carrera.forma - 6, 0, 100); return { det: sube ? "Fuerza +" + sube + "." : "El cuerpo no da más este año.", out: "neutro" }; } },
+            { t: "Meterle a la fuerza", fx: () => { const sube = subirCampo("rebote", 1); state.carrera.forma = clamp(state.carrera.forma - 6, 0, 100); return { det: sube ? "Fuerza +" + sube + "." : "La fuerza ya está en 99.", out: "neutro" }; } },
             { t: "Guardarte", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 8, 0, 100); return { det: "Llegás entero al partido.", out: "neutro" }; } }
         ] },
         { t: "MICRÓFONO", d: "Te entrevistan a la salida. Todo el país mira.", op: [
@@ -219,27 +236,64 @@ function mezclarCarrera(lista) {
     return copia;
 }
 
-function armarOpciones(lado) {
-    if (lado === "ataque") {
-        const cuarto = Math.random() < 0.5
-            ? unaDe([{ t: "Pelear el rebote", stat: "rebote" }, { t: "Cargar el tablero", stat: "rebote" }])
-            : unaDe([{ t: "Aguantar el contacto", stat: "defensa" }, { t: "Proteger la pelota", stat: "defensa" }]);
-        return mezclarCarrera([
-            unaDe([{ t: "Tirar", stat: "tiro" }, { t: "Tirar de tres", stat: "tiro" }, { t: "Floater", stat: "tiro" }]),
-            unaDe([{ t: "Pasar", stat: "pase" }, { t: "Doblar el pase", stat: "pase" }, { t: "Buscar al compañero", stat: "pase" }]),
-            unaDe([{ t: "Tratar de penetrar", stat: "velocidad" }, { t: "Ir al aro", stat: "velocidad" }, { t: "Romper la marca", stat: "velocidad" }]),
-            cuarto
-        ]);
+const JUGADAS_LADO = {
+    ataque: {
+        tiro: [{ t: "Tirar", stat: "tiro" }, { t: "Tirar de tres", stat: "tiro" }, { t: "Floater", stat: "tiro" }],
+        pase: [{ t: "Pasar", stat: "pase" }, { t: "Doblar el pase", stat: "pase" }, { t: "Buscar al compañero", stat: "pase" }],
+        velocidad: [{ t: "Tratar de penetrar", stat: "velocidad" }, { t: "Ir al aro", stat: "velocidad" }, { t: "Romper la marca", stat: "velocidad" }],
+        rebote: [{ t: "Pelear el rebote", stat: "rebote" }, { t: "Cargar el tablero", stat: "rebote" }],
+        defensa: [{ t: "Aguantar el contacto", stat: "defensa" }, { t: "Proteger la pelota", stat: "defensa" }]
+    },
+    defensa: {
+        defensa: [{ t: "Defender", stat: "defensa" }, { t: "Cerrar la marca", stat: "defensa" }],
+        rebote: [{ t: "Tomar el rebote", stat: "rebote" }, { t: "Cerrar el tablero", stat: "rebote" }],
+        velocidad: [{ t: "Robar en velocidad", stat: "velocidad" }, { t: "Presión alta", stat: "velocidad" }],
+        tiro: [{ t: "Contestar el tiro", stat: "tiro" }, { t: "Salir a la bomba", stat: "tiro" }],
+        pase: [{ t: "Negar el pase", stat: "pase" }, { t: "Leer el pase", stat: "pase" }]
     }
-    const cuarto = Math.random() < 0.5
-        ? unaDe([{ t: "Contestar el tiro", stat: "tiro" }, { t: "Salir a la bomba", stat: "tiro" }])
-        : unaDe([{ t: "Negar el pase", stat: "pase" }, { t: "Leer el pase", stat: "pase" }]);
-    return mezclarCarrera([
-        unaDe([{ t: "Defender", stat: "defensa" }, { t: "Cerrar la marca", stat: "defensa" }]),
-        unaDe([{ t: "Tomar el rebote", stat: "rebote" }, { t: "Cerrar el tablero", stat: "rebote" }]),
-        unaDe([{ t: "Robar en velocidad", stat: "velocidad" }, { t: "Presión alta", stat: "velocidad" }]),
-        cuarto
-    ]);
+};
+
+function armarOpciones(lado, prohibidas) {
+    const veto = prohibidas || [];
+    const catalogo = JUGADAS_LADO[lado] || JUGADAS_LADO.ataque;
+    if (!veto.length) {
+        if (lado === "ataque") {
+            const cuarto = Math.random() < 0.5 ? unaDe(catalogo.rebote) : unaDe(catalogo.defensa);
+            return mezclarCarrera([unaDe(catalogo.tiro), unaDe(catalogo.pase), unaDe(catalogo.velocidad), cuarto]);
+        }
+        const cuarto = Math.random() < 0.5 ? unaDe(catalogo.tiro) : unaDe(catalogo.pase);
+        return mezclarCarrera([unaDe(catalogo.defensa), unaDe(catalogo.rebote), unaDe(catalogo.velocidad), cuarto]);
+    }
+    const claves = [];
+    Object.keys(catalogo).forEach((clave) => {
+        if (veto.indexOf(clave) === -1) claves.push(clave);
+    });
+    return mezclarCarrera(claves).slice(0, 4).map((clave) => unaDe(catalogo[clave]));
+}
+
+function opcionesDePosesion(p, pos) {
+    const gastadas = gastadasPartido(p);
+    let lista = pos.opciones || [];
+    const libres = lista.filter((op) => gastadas.indexOf(op.stat) === -1);
+    if (!libres.length && !pos.rearmada) {
+        const nuevas = armarOpciones(pos.lado, gastadas);
+        if (nuevas.length) {
+            pos.opciones = nuevas;
+            pos.rearmada = true;
+            lista = nuevas;
+        }
+    }
+    const hayLibre = lista.some((op) => gastadas.indexOf(op.stat) === -1);
+    return lista.map((op, i) => {
+        const usada = gastadas.indexOf(op.stat) !== -1 && statAlta(op.stat);
+        return {
+            i: i,
+            op: op,
+            usada: usada,
+            bloqueada: usada && hayLibre,
+            chance: usada ? chanceRepetida(op.stat) : probStat(op.stat)
+        };
+    });
 }
 
 const PISO_MARCADOR = 50;
@@ -368,6 +422,7 @@ function asegurarPartido() {
         if (c.partido.ellos == null) c.partido.ellos = PISO_MARCADOR + (c.partido.fallos || 0) * PUNTOS_JUGADA;
         if ((c.partido.nuestros || 0) < PISO_MARCADOR) c.partido.nuestros = PISO_MARCADOR;
         if ((c.partido.ellos || 0) < PISO_MARCADOR) c.partido.ellos = PISO_MARCADOR;
+        if (!c.partido.gastadas) c.partido.gastadas = [];
         if (!c.partido.rivalId) {
             const rival = rivalDelPartido();
             c.partido.rivalId = rival ? Number(rival.id) : null;
@@ -395,6 +450,7 @@ function asegurarPartido() {
         nuestros: PISO_MARCADOR,
         ellos: PISO_MARCADOR,
         eco: null,
+        gastadas: [],
         rivalId: rival ? Number(rival.id) : null,
         grlInicio: grlCarrera(),
         paso: c.paso,
@@ -490,7 +546,7 @@ function jugarMomento(clave, final, pend) {
     const chance = probCarrera(clave);
     const gano = Math.random() * 100 < chance;
     const sube = subirCampo(clave, gano ? 1 : 0);
-    const marca = sube ? nombreStat(clave) + " +" + sube : "sin subida: techo del año";
+    const marca = sube ? nombreStat(clave) + " +" + sube : "sin subida";
     const mult = final ? 1.5 : 1;
     state.partidos = (state.partidos || 0) + 1;
     state.partidas = (state.partidas || 0) + 1;
@@ -532,12 +588,17 @@ function resolverPosesion(indice) {
     const p = c.partido;
     if (!p || !p.posesiones || p.eco) return;
     const pos = p.posesiones[p.indice];
-    if (!pos || !pos.opciones || !pos.opciones[indice]) return;
-    const op = pos.opciones[indice];
-    const chance = probCarrera(op.stat);
+    if (!pos || !pos.opciones || pos.opciones[indice] == null) return;
+    const item = opcionesDePosesion(p, pos).filter((fila) => fila.i === indice)[0];
+    if (!item || item.bloqueada) return;
+    const op = item.op;
+    const chance = item.chance;
     const gano = Math.random() * 100 < chance;
+    if (statAlta(op.stat) && gastadasPartido(p).indexOf(op.stat) === -1) {
+        gastadasPartido(p).push(op.stat);
+    }
     const sube = subirCampo(op.stat, gano ? 1 : 0);
-    const marca = sube ? nombreStat(op.stat) + " +" + sube : nombreStat(op.stat) + " al techo del año";
+    const marca = sube ? nombreStat(op.stat) + " +" + sube : nombreStat(op.stat) + " ya en 99";
     reflejarCalibre();
     const ptsNos = gano ? PUNTOS_JUGADA : 0;
     const ptsEllos = gano ? 0 : PUNTOS_JUGADA;
@@ -605,7 +666,10 @@ function cerrarPartido() {
     const marcador = (p.nuestros || 0) + "-" + (p.ellos || 0);
     const delta = grlCarrera() - (Number(p.grlInicio) || grlCarrera());
     const extra = delta > 0 ? " (+" + delta + ")" : "";
-    const pend = p.paso === "debut" ? (p.momento < 4 ? "debut" : "draftnba") : "avanzar";
+    // Playoff de temporada: ganar sigue en el cuadro y perder deja afuera. El debut sigue su historia.
+    let pend = "avanzar";
+    if (p.paso === "debut") pend = p.momento < 4 ? "debut" : "draftnba";
+    else if (!gano && p.paso === "temporada") pend = "fuera";
     const eraFinal = !!p.final;
     const ot = Number(p.overtimes) || 0;
     const textoOt = ot ? " Overtime" + (ot > 1 ? "s: " + ot + "." : ".") : "";
@@ -617,6 +681,7 @@ function cerrarPartido() {
     let detalle;
     let tipo;
     if (gano) {
+        // Victoria: suma XP y, si era la final, el título. La ronda siguiente queda para "avanzar".
         state.victorias = (state.victorias || 0) + 1;
         const xp = eraFinal ? 10 : 6;
         c.xp += xp;
@@ -632,10 +697,16 @@ function cerrarPartido() {
         detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". +" + xp + " XP." + (eraFinal ? " Título de liga." : "");
         tipo = "bien";
     } else {
+        // Derrota de playoff: afuera y la temporada que viene. Una derrota del debut no elimina.
         c.xp += 3;
         sumarHinchada(-4);
-        titulo = "Derrota";
-        detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". La cancha igual te hizo subir.";
+        if (pend === "fuera") {
+            titulo = "Afuera";
+            detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". Quedaste afuera de los playoffs. +3 XP. Sigue la temporada " + ((Number(state.temporada) || 1) + 1) + ".";
+        } else {
+            titulo = "Derrota";
+            detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". La cancha igual te hizo subir.";
+        }
         tipo = "mal";
     }
     const cierre = {
@@ -666,6 +737,7 @@ function draftNBA() {
 }
 
 function siguienteTemporada() {
+    // Cierra el año: sube temporada y edad, y aplica el crecimiento anual una sola vez.
     const c = state.carrera;
     state.temporada = (Number(state.temporada) || 1) + 1;
     state.edad = (Number(state.edad) || 19) + 1;
@@ -678,8 +750,13 @@ function siguienteTemporada() {
     c.forma = clamp(c.forma + 15, 0, 100);
     c.partido = null;
     c.ofertaEntreno = null;
+    c.anioNuevo = false;
     c.paso = (state.temporada > 15 || state.edad >= 38) ? "leyenda" : "temporada";
-    persistir();
+}
+
+function pendTrasOferta() {
+    // Si la eliminación ya sumó el año, quedarse o fichar no lo vuelve a sumar.
+    return asegurarCarrera().anioNuevo ? "temporada" : "sigtemp";
 }
 
 function seguirResultado() {
@@ -687,6 +764,7 @@ function seguirResultado() {
     const pend = c.resultado ? c.resultado.pend : "temporada";
     c.resultado = null;
     if (pend === "debut") {
+        // El debut es el año local: se sigue el relato aunque el partido se pierda.
         if (c.momento < 4) {
             c.momento += 1;
             c.paso = "debut";
@@ -696,6 +774,7 @@ function seguirResultado() {
             c.momento = 0;
         }
     } else if (pend === "avanzar") {
+        // Victoria de playoff: otra ronda, o la pretemporada del mismo año si era la final.
         if (c.momento < 4) {
             c.momento += 1;
             c.paso = "temporada";
@@ -704,15 +783,27 @@ function seguirResultado() {
             c.espera = null;
             c.paso = "offentreno";
         }
+    } else if (pend === "fuera") {
+        // Eliminado: el año nuevo arranca y la pretemporada es la de esa temporada.
+        siguienteTemporada();
+        if (c.paso !== "leyenda") {
+            c.anioNuevo = true;
+            c.paso = "offentreno";
+        }
     } else if (pend === "draftnba") {
+        // Terminó el año local y se abre el draft de la NBA.
         c.localHecha = true;
         c.paso = "draftnba";
     } else if (pend === "temporada") {
+        // La temporada ya fue contada. Acá solo empiezan sus playoffs.
         c.momento = 0;
         c.paso = "temporada";
+        c.anioNuevo = false;
     } else if (pend === "sigtemp") {
+        // Campeón o mercado normal: el año suma al salir de las ofertas.
         siguienteTemporada();
     } else if (pend === "leyenda") {
+        // Retiro: la carrera pasa a la pantalla final.
         c.paso = "leyenda";
     }
     c.evento = null;
@@ -762,7 +853,7 @@ function tableroCarrera(editable) {
             <div><span>TITULOS</span><b>${state.titulos || 0}</b></div>
         </div>
         ${state.flash ? `<p class="flash">${esc(state.flash)}</p>` : ""}
-        ${typeof textoCrecimiento === "function" ? `<p class="nota">${esc(textoCrecimiento())}</p>` : ""}
+        ${typeof textoCrecimiento === "function" && textoCrecimiento() ? `<p class="nota">${esc(textoCrecimiento())}</p>` : ""}
         ${filas}
     </div>`;
 }
@@ -781,7 +872,7 @@ function marcoCarrera(paso, cuerpo, acciones) {
 function pantallaPortada() {
     const eq = equipoActual();
     const c = state.carrera;
-    let lead = "Un año en la liga local, draft y temporadas. En el partido hay varias posesiones: tirar, pasar o penetrar. La chance sale de tus stats. La media es el promedio.";
+    let lead = "";
     let boton = "Ir al sorteo de la LNB";
     if (c.paso !== "portada" && c.paso !== "draft") {
         boton = "Seguir la carrera";
@@ -797,7 +888,7 @@ function pantallaPortada() {
     }
     return marcoCarrera("MODO CARRERA", `
         <h1>TU<br><span>TEMPORADA</span></h1>
-        <p class="lead">${esc(lead)}</p>
+        ${lead ? `<p class="lead">${esc(lead)}</p>` : ""}
         <div class="caja">
             <div class="statline"><span>Jugador</span><b>${esc(state.nombre || "—")}</b></div>
             <div class="statline"><span>Media</span><b class="num">${grlCarrera()}</b></div>
@@ -811,18 +902,18 @@ function pantallaDraft() {
     const liga = clubesSorteo();
     const eq = equipoActual();
     if (!clubesLiga("LNB").length) {
-        return marcoCarrera("LIGA LOCAL", `<h1>SIN<br><span>CLUBES</span></h1><p class="lead">No hay equipos de la LNB en la base. Revisá que la tabla equipos esté cargada.</p>`, "");
+        return marcoCarrera("LIGA LOCAL", `<h1>SIN<br><span>CLUBES</span></h1><p class="lead">No hay clubes de la liga local.</p>`, "");
     }
     if (eq && state.carrera.draftListo) {
         return marcoCarrera("LIGA LOCAL", `
             ${tableroCarrera(false)}
             <h1>${esc(eq.nombre)}</h1>
-            <p class="lead">${esc(eq.ciudad || "")} · ${esc(eq.liga)}. Entrás al proyecto juvenil. El piso de ${eq.minima} es para los fichajes, no para este sorteo.</p>
+            <p class="lead">${esc(eq.ciudad || "")} · ${esc(eq.liga)}. Entrás al proyecto juvenil.</p>
         `, `<button class="btn" data-mc="debut">Arrancar el año</button>`);
     }
     return marcoCarrera("SORTEO", `
         <h1>CLUB<br><span>DE ORIGEN</span></h1>
-        <p class="lead">El sorteo elige entre ${liga.length} clubes de la LNB a los que tu calibre puede llegar.</p>
+        <p class="lead">El sorteo elige entre ${liga.length} clubes de la LNB. Todos tienen la misma chance.</p>
         <div class="draft-nombre" id="draftName">???</div>
     `, `<button class="btn" data-mc="sortear">Sortear club</button>`);
 }
@@ -846,11 +937,11 @@ function pantallaDraftNBA() {
     const botones = lista.map((club, i) =>
         `<button class="btn ${i === 0 ? "" : "ghost"}" data-mc="pick" data-club="${club.id}">${esc(club.nombre)}<span class="sub">${esc(club.liga)} · pide ${club.minima}</span></button>`
     ).join("");
-    const vacio = lista.length ? "" : `<p class="lead">No hay equipos NBA en la base.</p>`;
+    const vacio = lista.length ? "" : `<p class="lead">No hay clubes de la NBA.</p>`;
     return marcoCarrera("DRAFT", `
         ${tableroCarrera(false)}
         <h1>ELEGÍ<br><span>TU DESTINO</span></h1>
-        <p class="lead">Tu media es ${grlCarrera()}. Estos clubes de la NBA te toman. El tablero pasa a usar sus colores.</p>
+        <p class="lead">Tu media es ${grlCarrera()}. Estos clubes de la NBA te toman.</p>
         ${vacio}
     `, botones);
 }
@@ -916,10 +1007,25 @@ function pantallaPartido() {
     if (p.eco) return pantallaEco(p);
     const pos = p.posesiones[p.indice];
     if (!pos) return pantallaResultadoCarrera();
-    const ops = pos.opciones.map((op, i) => {
-        const extra = `<span class="sub">${esc(nombreStat(op.stat))} ${valorStat(op.stat)} · ${probCarrera(op.stat)}%</span>`;
-        return `<button class="btn ${i === 0 ? "" : "ghost"}" data-mc="posesion" data-i="${i}">${esc(op.t)}${extra}</button>`;
+    const vista = opcionesDePosesion(p, pos);
+    let primario = -1;
+    vista.forEach((item) => {
+        if (primario < 0 && !item.bloqueada) primario = item.i;
+    });
+    const ops = vista.map((item) => {
+        const nombre = nombreStat(item.op.stat);
+        const valor = valorStat(item.op.stat);
+        const detalle = item.bloqueada
+            ? `${nombre} ${valor} · ya usada`
+            : (item.usada ? `${nombre} ${valor} · ${item.chance}% · ya no asegura` : `${nombre} ${valor} · ${item.chance}%`);
+        const clase = item.bloqueada ? "ghost bloqueado" : (item.i === primario ? "" : "ghost");
+        const dis = item.bloqueada ? " disabled" : "";
+        return `<button class="btn ${clase}" data-mc="posesion" data-i="${item.i}"${dis}>${esc(item.op.t)}<span class="sub">${esc(detalle)}</span></button>`;
     }).join("");
+    const gastadas = gastadasPartido(p);
+    const regla = (p.indice === 0 && !p.overtimes) || gastadas.length
+        ? `<p class="nota">El porcentaje es una sola estadística. De ${UMBRAL_STAT_ALTA} para arriba, esa jugada no se repite en el partido.</p>`
+        : "";
     const enOt = p.overtimes && p.indice >= p.posesiones.length - 2;
     const ronda = p.paso === "temporada" ? nombreRonda(p.momento) : "";
     const marca = enOt ? ("OVERTIME " + p.overtimes) : (ronda || (p.paso === "debut" && c.evento && c.evento.ev ? c.evento.ev.t : (p.final ? "FINAL" : "PARTIDO")));
@@ -933,7 +1039,8 @@ function pantallaPartido() {
         <p class="en-juego">${enOt ? "OVERTIME" : (ronda || (p.final ? "FINAL" : "EN JUEGO"))}</p>
         ${htmlMarcador(p.nuestros || 0, p.ellos || 0, p.rivalId)}
         <h1>${esc(pos.t)}</h1>
-        <p class="lead">${leadOt ? esc(leadOt) : ""}${leadRonda ? esc(leadRonda) : ""}${esc(pos.d)} La chance sale de tu stat.</p>
+        <p class="lead">${leadOt ? esc(leadOt) : ""}${leadRonda ? esc(leadRonda) : ""}${esc(pos.d)}</p>
+        ${regla}
     `, ops);
 }
 
@@ -956,7 +1063,7 @@ function pantallaOff() {
         return marcoCarrera("PRETEMPORADA", `
             ${tableroCarrera(true)}
             <h1>SEGUÍ<br><span>EL ENTRENO</span></h1>
-            <p class="lead">Quedaste a mitad de ${esc(ent.titulo)}. ${esc(ent.detalle)}. Si ganás, esa habilidad sube 2, dentro del techo de tu edad. Si no llegás, no sube.</p>
+            <p class="lead">Quedaste a mitad de ${esc(ent.titulo)}. ${esc(ent.detalle)}. Si ganás, esa habilidad sube 2. Si no llegás, no sube.</p>
         `, `<a class="btn" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}">Seguir<span class="sub">${esc(ent.titulo)}</span></a>
             <button class="btn ghost" data-mc="omitir">Omitir este entreno</button>
             ${ofertas}`);
@@ -968,7 +1075,7 @@ function pantallaOff() {
     return marcoCarrera("PRETEMPORADA", `
         ${tableroCarrera(true)}
         <h1>ENTRENAR</h1>
-        <p class="lead">Elegí el minijuego de esta pretemporada. Si ganás, esa habilidad sube 2. Si no llegás, no sube. ${esc(typeof textoCrecimiento === "function" ? textoCrecimiento() : "El techo sube con los años.")}</p>
+        <p class="lead">Elegí el minijuego de esta pretemporada. Si ganás, esa habilidad sube 2. Si no llegás, no sube.</p>
         <div class="opciones">${lista}</div>
     `, ofertas);
 }
@@ -1146,7 +1253,7 @@ function cobrarEntrenoCarrera(gano, juego) {
     state.fase = "modocarrera";
     reflejarCalibre();
     const nombre = ENTRENO_CARRERA[juego] ? ENTRENO_CARRERA[juego].titulo : "Entrenamiento";
-    const stat = clave && sube ? nombreStat(clave) + " +" + sube + ". " : (gano && clave ? "Esa habilidad está en el techo del año. " : "");
+    const stat = clave && sube ? nombreStat(clave) + " +" + sube + ". " : (gano && clave ? "Esa habilidad ya está en 99. " : "");
     state.flash = nombre + ": " + (gano ? "victoria" : "sin subida") + ". " + stat + "Calibre " + (state.calibre || 46) + ". +" + xp + " XP.";
     persistir();
 }
@@ -1183,7 +1290,8 @@ function ligarModoCarrera(raiz) {
             if (acc === "quedar") {
                 sumarHinchada(8);
                 state.rival.puntos += 9;
-                guardarPaso("sigtemp", "Te quedaste", "+8 hinchada. La gente lo valora.", "neutro");
+                // Quedarse usa la misma regla que el fichaje: no suma el año dos veces.
+                guardarPaso(pendTrasOferta(), "Te quedaste", "+8 hinchada. La gente lo valora.", "neutro");
                 render();
                 return;
             }
@@ -1250,13 +1358,14 @@ function ligarModoCarrera(raiz) {
                     c.jugados = [];
                     state.hinchada = 60;
                     state.quimica = 60;
-                    guardarPaso("temporada", "Drafteado por " + club.nombre, "Arranca la NBA con los colores del club.", "bien");
+                    guardarPaso("temporada", "Drafteado por " + club.nombre, "Arranca la temporada en la NBA.", "bien");
                 } else {
                     c.xp += 10;
                     if (salto) state.hinchada = 55;
                     else sumarHinchada(4);
                     state.rival.puntos += 9;
-                    guardarPaso("sigtemp", "Fichaje: " + club.nombre, club.liga + " · +10 XP.", "bien");
+                    // Firmar cierra el mercado y deja el año como lo marcó pendTrasOferta.
+                    guardarPaso(pendTrasOferta(), "Fichaje: " + club.nombre, club.liga + " · +10 XP.", "bien");
                 }
                 render();
                 return;
@@ -1266,22 +1375,26 @@ function ligarModoCarrera(raiz) {
                 const delta = Number(nodo.dataset.d);
                 const campo = campoStat(clave);
                 const actual = Number(state.stats[campo]) || 50;
-                if (delta > 0 && c.xp >= COSTO_XP) {
-                    const sube = typeof aplicarSubida === "function" ? aplicarSubida(campo, 1) : 0;
-                    if (!sube) {
-                        state.flash = typeof textoTope === "function" ? textoTope() : "Esa habilidad está en el techo de tu edad.";
+                if (delta > 0) {
+                    if (c.xp < COSTO_XP) {
+                        state.flash = "Te faltan XP. Cada punto sale " + COSTO_XP + ".";
+                    } else if (actual >= 99) {
+                        state.flash = nombreStat(clave) + " ya está en 99.";
                     } else {
+                        state.stats[campo] = actual + 1;
                         c.xp -= COSTO_XP;
                         reflejarCalibre();
-                        state.flash = nombreStat(clave) + " +" + sube + ". Media " + grlCarrera() + ".";
+                        state.flash = nombreStat(clave) + " +1. Media " + grlCarrera() + ".";
                     }
-                } else if (delta < 0 && actual > 24) {
-                    c.xp += COSTO_XP;
-                    state.stats[campo] = actual - 1;
-                    reflejarCalibre();
-                    state.flash = nombreStat(clave) + " -1. +" + COSTO_XP + " XP.";
-                } else {
-                    state.flash = "Sin XP o el stat está al límite.";
+                } else if (delta < 0) {
+                    if (actual <= 24) {
+                        state.flash = nombreStat(clave) + " ya está en el mínimo.";
+                    } else {
+                        state.stats[campo] = actual - 1;
+                        c.xp += COSTO_XP;
+                        reflejarCalibre();
+                        state.flash = nombreStat(clave) + " -1. +" + COSTO_XP + " XP.";
+                    }
                 }
             }
             persistir();

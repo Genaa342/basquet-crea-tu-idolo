@@ -56,9 +56,10 @@ class CuentaTest extends TestCase
             ->postJson('/api/guardar.php', $this->ficha('Titular', ['id' => $id]))
             ->assertForbidden();
 
-        $this->actingAs($dueno)
-            ->postJson('/api/guardar.php', $this->ficha('Suplente'))
-            ->assertStatus(422);
+        $suplente = $this->actingAs($dueno)
+            ->postJson('/api/guardar.php', $this->ficha('Suplente'));
+        $suplente->assertOk();
+        $this->assertNotSame($id, $suplente->json('id'));
 
         $this->actingAs($dueno)
             ->postJson('/api/manager/nuevo')
@@ -69,10 +70,6 @@ class CuentaTest extends TestCase
             ->assertOk();
 
         $this->assertTrue(Jugador::query()->find($id)->retiro);
-
-        $this->actingAs($dueno)
-            ->postJson('/api/guardar.php', $this->ficha('Segundo'))
-            ->assertStatus(422);
 
         $this->actingAs($dueno)->postJson('/api/manager')->assertOk();
         $this->assertTrue($dueno->fresh()->es_manager);
@@ -176,7 +173,7 @@ class CuentaTest extends TestCase
         $this->assertSame(1, $ficha['revision']);
     }
 
-    public function test_un_salto_de_calibre_o_un_novato_alto_se_rechaza(): void
+    public function test_una_mejora_grande_se_guarda_y_el_tope_sigue_en_99(): void
     {
         $user = User::factory()->create();
         $alta = $this->actingAs($user)->postJson('/api/guardar.php', $this->ficha('Titular'));
@@ -186,32 +183,30 @@ class CuentaTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/guardar.php', $this->ficha('Titular', [
                 'id' => $id,
+                'revision' => 1,
                 'calibre' => 87,
-            ]))
-            ->assertStatus(422);
-
-        $this->actingAs($user)
-            ->postJson('/api/guardar.php', $this->ficha('Titular', [
-                'id' => $id,
-                'calibre' => 86,
                 'stats' => [
-                    'velocidad' => 75,
-                    'tiro' => 85,
-                    'fuerza' => 45,
-                    'control' => 85,
-                    'defensa' => 55,
+                    'velocidad' => 90,
+                    'tiro' => 99,
+                    'fuerza' => 70,
+                    'control' => 88,
+                    'defensa' => 80,
                 ],
             ]))
-            ->assertStatus(422);
+            ->assertOk();
 
         $otro = User::factory()->create();
         $this->actingAs($otro)
             ->postJson('/api/guardar.php', $this->ficha('Inflado', ['calibre' => 61]))
+            ->assertOk();
+
+        $this->actingAs($otro)
+            ->postJson('/api/guardar.php', $this->ficha('Roto', ['calibre' => 100]))
             ->assertStatus(422);
 
         $ficha = json_decode(Jugador::query()->find($id)->ficha, true);
-        $this->assertSame(46, $ficha['calibre']);
-        $this->assertSame(60, $ficha['stats']['control']);
+        $this->assertSame(87, $ficha['calibre']);
+        $this->assertSame(99, $ficha['stats']['tiro']);
     }
 
     public function test_sin_retiro_no_hay_manager(): void

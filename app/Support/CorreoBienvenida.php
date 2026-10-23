@@ -45,12 +45,34 @@ class CorreoBienvenida
 
     public function enviar(string $nombre, string $email): void
     {
+        $mensaje = $this->mensaje($nombre);
+        $this->despachar($email, $nombre, $mensaje['asunto'], $mensaje['html'], $mensaje['texto']);
+    }
+
+    public function enviarCodigo(string $nombre, string $email, string $codigo): void
+    {
+        $asunto = 'THE ROOKIE: código para una contraseña nueva';
+        $texto = "Hola {$nombre}.\n\n"
+            ."Pediste una contraseña nueva. El código es {$codigo}.\n"
+            ."Vence en 30 minutos. Si no lo pediste, ignorá este mensaje.\n\n"
+            .'THE ROOKIE';
+        $html = '<div style="font-family:Arial,sans-serif;color:#111;line-height:1.45;">'
+            .'<p>Hola '.e($nombre).'.</p>'
+            .'<p>Pediste una contraseña nueva. El código es <strong>'.e($codigo).'</strong>.</p>'
+            .'<p>Vence en 30 minutos. Si no lo pediste, ignorá este mensaje.</p>'
+            .'<p>THE ROOKIE</p>'
+            .'</div>';
+
+        $this->despachar($email, $nombre, $asunto, $html, $texto);
+    }
+
+    private function despachar(string $email, string $nombre, string $asunto, string $html, string $texto): void
+    {
         $host = (string) config('mail.mailers.smtp.host');
         if (in_array($host, ['127.0.0.1', 'localhost', '0.0.0.0'], true)) {
             throw new \RuntimeException('No hay un servidor de correo en este equipo.');
         }
 
-        $mensaje = $this->mensaje($nombre);
         $mail = new PHPMailer(true);
         $mail->CharSet = 'UTF-8';
         $mail->Timeout = 4;
@@ -85,15 +107,15 @@ class CorreoBienvenida
 
         $mail->setFrom($desde, $nombreDesde !== '' ? $nombreDesde : 'THE ROOKIE');
         $mail->addAddress($email, $nombre);
-        $mail->Subject = $mensaje['asunto'];
+        $mail->Subject = $asunto;
         $mail->isHTML(true);
-        $mail->Body = $mensaje['html'];
-        $mail->AltBody = $mensaje['texto'];
+        $mail->Body = $html;
+        $mail->AltBody = $texto;
 
         try {
             $mail->send();
         } catch (Throwable $falla) {
-            throw new \RuntimeException('No pude enviar el correo de bienvenida.', 0, $falla);
+            throw new \RuntimeException('No pude enviar el correo.', 0, $falla);
         }
     }
 

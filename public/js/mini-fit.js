@@ -39,9 +39,30 @@
         return (location.pathname.indexOf("/reflejos/") !== -1 ? "../" : "") + "jugar.php";
     }
 
+    function juegoActual() {
+        var path = location.pathname.toLowerCase();
+        if (path.indexOf("/tiro/") !== -1) return "tiro";
+        if (path.indexOf("/pase/") !== -1) return "pase";
+        if (path.indexOf("/dribling/") !== -1) return "dribling";
+        if (path.indexOf("/reflejos/") !== -1) return "reflejos";
+        if (path.indexOf("juegodememoria") !== -1) return "memoria";
+        if (path.indexOf("simondice") !== -1) return "simon";
+        if (path.indexOf("defensa") !== -1) return "defensa";
+        return "";
+    }
+
     function irAlLobby() {
         enCurso = false;
         location.href = destino();
+    }
+
+    function salirDelJuego() {
+        var modo = modoActual();
+        if (enCurso && (modo === "partido" || modo === "carrera")) {
+            var juego = juegoActual();
+            if (juego) window.rookieSumar(juego, false);
+        }
+        irAlLobby();
     }
 
     window.rookieContinuar = function () {
@@ -80,7 +101,7 @@
             + '<button type="button" class="si">Sí</button>'
             + '<button type="button" class="no">No, seguir entrenando</button>'
             + '</div>';
-        capa.querySelector(".si").addEventListener("click", irAlLobby);
+        capa.querySelector(".si").addEventListener("click", salirDelJuego);
         capa.querySelector(".no").addEventListener("click", function () {
             capa.hidden = true;
         });

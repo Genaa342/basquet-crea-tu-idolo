@@ -40,9 +40,12 @@ class CarreraController extends Controller
             'google' => filled(config('services.google.client_id')),
             'user' => $user ? [
                 'nombre' => $user->name,
-                'email' => $user->email,
+                'usuario' => $user->usuario,
+                // El correo interno de un usuario inventado no se muestra: la persona entra con su usuario.
+                'email' => ($user->usuario && str_ends_with((string) $user->email, '@cuentas.therookie.local')) ? null : $user->email,
                 'avatar' => $user->avatar,
                 'manager' => (bool) $user->es_manager,
+                'googleCuenta' => filled($user->google_id),
                 'nivel' => $user->es_manager ? Estrellas::nivelDeCalibre($calibre) : 0,
             ] : null,
             'jugadores' => $jugadores,
@@ -121,14 +124,6 @@ class CarreraController extends Controller
         }
         if (! $jugador) {
             $id = 0;
-            if (! $user->es_manager) {
-                if ($user->jugadores()->where('retiro', false)->exists()) {
-                    return response()->json(['ok' => false, 'error' => 'Ya tenés una carrera activa.'], 422);
-                }
-                if ($user->jugadores()->exists()) {
-                    return response()->json(['ok' => false, 'error' => 'Pasá a manager para crear otro jugador.'], 422);
-                }
-            }
         }
 
         $previa = [];
@@ -144,21 +139,6 @@ class CarreraController extends Controller
                 'revision' => $revGuardada,
                 'ficha' => $jugador->fichaLista(),
             ], 409);
-        }
-        if ($previa !== []) {
-            $antes = (int) ($previa['calibre'] ?? 46);
-            if ($calibre > $antes + 40) {
-                return response()->json(['ok' => false, 'error' => 'Ese salto de calibre no sale de un partido.'], 422);
-            }
-            $viejas = is_array($previa['stats'] ?? null) ? $previa['stats'] : [];
-            foreach (['velocidad', 'tiro', 'fuerza', 'control', 'defensa'] as $clave) {
-                $viejo = (int) ($viejas[$clave] ?? $stats[$clave]);
-                if ($stats[$clave] > $viejo + 24) {
-                    return response()->json(['ok' => false, 'error' => 'Esa habilidad subió más de lo que permite un entrenamiento.'], 422);
-                }
-            }
-        } elseif (! $user->es_manager && $calibre > 60) {
-            return response()->json(['ok' => false, 'error' => 'Un novato no arranca con ese calibre.'], 422);
         }
         $datos['revision'] = $revGuardada + 1;
 

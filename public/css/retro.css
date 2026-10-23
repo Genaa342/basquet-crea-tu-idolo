@@ -7,7 +7,7 @@
     --muted: #d5d8e0;
     --danger: #ff5d73;
     --bar: #d0d0d0;
-    --fondo: url("/assets/fondo-calle.jpg?v=2");
+    --fondo: url("/assets/fondo-calle.jpg?v=3");
     --velo-top: rgba(16, 16, 18, 0.20);
     --velo-bot: rgba(8, 8, 10, 0.62);
     --wash: rgba(0, 0, 0, 0);
@@ -608,6 +608,16 @@ button, input, select, textarea { touch-action: manipulation; }
     margin-bottom: 2px;
 }
 
+#app .opcion.sel,
+#app .opcion.sel span,
+#app .opcion.sel strong,
+#app .chip.sel,
+#app .team.sel,
+#app .team.sel span,
+#app .team.sel strong {
+    color: #140f00;
+}
+
 #app .nombre-jugador {
     font-size: 18px;
     font-weight: 700;
@@ -1122,7 +1132,7 @@ button, input, select, textarea { touch-action: manipulation; }
     #app .top .link { font-size: 12px; }
 }
 
-@media (max-height: 700px) and (max-width: 879px) {
+@media (max-height: 700px) and (max-width: 699px) {
     .screen { padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); gap: 6px; }
     #app .btn, #app a.btn { min-height: 40px; font-size: 14px; }
     #app .actions { gap: 6px; }
@@ -1135,7 +1145,7 @@ button, input, select, textarea { touch-action: manipulation; }
     #app .nums { font-size: 22px; }
 }
 
-@media (max-height: 520px) and (max-width: 879px) {
+@media (max-height: 520px) and (max-width: 699px) {
     #app .actions.columna {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1146,7 +1156,7 @@ button, input, select, textarea { touch-action: manipulation; }
     }
 }
 
-@media (min-width: 880px) {
+@media (min-width: 700px) {
     html, body {
         background:
             linear-gradient(180deg, rgba(2, 4, 12, 0.30), rgba(2, 4, 12, 0.50)),
