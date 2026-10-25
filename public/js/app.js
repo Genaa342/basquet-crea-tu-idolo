@@ -52,11 +52,11 @@ const FRASES = {
         ["Un líder no nace. Se construye con cada partido.", "Phil Jackson", "entrenar", "Entrenar"]
     ],
     entrenar: [
-        ["El sudor de hoy es el calibre de mañana.", "John Wooden", "lobby", "Ver la ficha"],
+        ["Repetí el movimiento hasta que salga solo.", "John Wooden", "lobby", "Ver la ficha"],
         ["No practiques hasta que salga bien. Practicá hasta que no salga mal.", "John Wooden", "lobby", "Ver la ficha"]
     ],
     ofertas: [
-        ["La oportunidad baila con quien está en la cancha.", "Phil Jackson", "entrenar", "Subir el calibre"],
+        ["La oportunidad baila con quien está en la cancha.", "Phil Jackson", "entrenar", "Ir a practicar"],
         ["No esperes el llamado. Entrená para merecerlo.", "Gregg Popovich", "entrenar", "Ir al gimnasio"]
     ],
     cuenta: [
@@ -735,9 +735,9 @@ function etiquetaStat(clave) {
 }
 
 const ENTRENOS = [
-    { id: "tiro", titulo: "Tiro al aro", stat: "Tiro", detalle: "20 puntos en 30 segundos" },
-    { id: "pase", titulo: "Pase relámpago", stat: "Control", detalle: "8 pases sin que te lo roben" },
-    { id: "dribling", titulo: "Dribling", stat: "Velocidad", detalle: "200 puntos en la pista" },
+    { id: "tiro", titulo: "Tiro al aro", stat: "Tiro", detalle: "75 puntos en 30 segundos" },
+    { id: "pase", titulo: "Pase relámpago", stat: "Control", detalle: "15 pases sin que te lo roben" },
+    { id: "dribling", titulo: "Dribling", stat: "Velocidad", detalle: "3500 puntos en la pista" },
     { id: "reflejos", titulo: "Reflejos", stat: "Velocidad", detalle: "Tocá la pelota a tiempo" },
     { id: "memoria", titulo: "Memoria", stat: "Tiro", detalle: "Encontrá las parejas" },
     { id: "simon", titulo: "Simón", stat: "Control", detalle: "Repetí la secuencia" },
@@ -1072,29 +1072,6 @@ function textoCrecimiento() {
     return "";
 }
 
-function subirStat(juego, cuanto) {
-    const mapa = {
-        reflejos: "velocidad",
-        simon: "control",
-        memoria: "tiro",
-        defensa: "defensa",
-        tiro: "tiro",
-        pase: "control",
-        dribling: "velocidad"
-    };
-    const clave = mapa[juego];
-    if (!clave || !state.stats) return { nombre: "", sube: 0 };
-    const antes = Number(state.stats[clave]) || 0;
-    const sube = aplicarSubida(clave, cuanto);
-    if (clave === "defensa" && antes < 80 && state.stats.defensa >= 80) sumarTrofeo("MEJOR DEFENSOR");
-    const nombre = { velocidad: "Velocidad", control: "Control", tiro: "Tiro", defensa: "Defensa" }[clave] || "";
-    return { nombre: nombre, sube: sube };
-}
-
-function pasoCalibre(gano) {
-    return gano ? 1 : 0;
-}
-
 function nivelManager() {
     const lista = (state.cuenta && state.cuenta.jugadores) || [];
     let maximo = 0;
@@ -1113,19 +1090,12 @@ function avisoNivel() {
     return " Manager nivel " + user.nivel + ".";
 }
 
-function cobrarEntreno(gano, juego) {
+function cobrarEntreno(gano) {
     state.esperando = null;
     state.partidas = (state.partidas || 0) + 1;
-    const resultado = gano ? subirStat(juego, 2) : { nombre: "", sube: 0 };
-    const cal = sumarCalibre(pasoCalibre(gano));
-    if (!gano) {
-        state.flash = "No llegaste a la meta. El calibre sigue en " + state.calibre + ".";
-    } else if (!resultado.sube && !cal) {
-        state.flash = textoTope();
-    } else {
-        const habilidad = resultado.sube ? resultado.nombre + " +" + resultado.sube + ". " : "Esa habilidad ya está en 99. ";
-        state.flash = habilidad + "Calibre " + state.calibre + (cal ? " (+" + cal + ")." : ".") + avisoNivel();
-    }
+    state.flash = gano
+        ? "Práctica cumplida. Las estadísticas quedan igual."
+        : "No llegaste a la meta. Fue solo práctica: la ficha no cambia.";
     state.fase = "entrenar";
     persistir();
     render();
@@ -1176,7 +1146,7 @@ function textoLobby() {
         if (!ofertas.length) {
             const piso = pisoDe();
             const nba = pisoDe("NBA");
-            return "Estás en la calle. Entrená para subir el calibre. Un club llama desde " + (piso || 54) + ". La NBA, desde " + (nba || 78) + ".";
+            return "Estás en la calle. Un club llama desde " + (piso || 54) + ". La NBA, desde " + (nba || 78) + ".";
         }
         return "Hay ofertas para tu calibre " + state.calibre + ". Podés firmar y empezar la carrera.";
     }
@@ -1423,7 +1393,7 @@ function pantallaComo() {
             <h1>COMO<br><span>JUGAR</span></h1>
             <div class="opciones">
                 <div class="caja"><h2>01 ARMAR</h2><p class="lead">Nombre, puesto, estilo y dos habilidades. Arrancás en la calle.</p></div>
-                <div class="caja"><h2>02 ENTRENO</h2><p class="lead">Si cumplís la meta, esa habilidad sube. Podés seguir mejorando.</p></div>
+                <div class="caja"><h2>02 ENTRENO</h2><p class="lead">Los minijuegos son práctica. Ganar o perder no cambia la ficha.</p></div>
                 <div class="caja"><h2>03 CARRERA</h2><p class="lead">Sorteo en la LNB, año local y draft. En el partido elegís tirar, pasar o penetrar.</p></div>
                 <div class="caja"><h2>04 OFERTAS</h2><p class="lead">Un club llama cuando tu calibre llega a su piso. La NBA es la liga más alta.</p></div>
             </div>
@@ -1513,13 +1483,13 @@ function pantallaLobby() {
 
 function pantallaEntrenar() {
     const lista = ENTRENOS.map((juego) =>
-        `<a class="opcion" data-juego="${esc(juego.id)}" data-modo="entreno" href="${esc(linkJuego(juego.id, "entreno"))}"><strong>${esc(juego.titulo)}</strong><span>${esc(juego.stat)} · ${esc(juego.detalle)}</span></a>`
+        `<a class="opcion" data-juego="${esc(juego.id)}" data-modo="entreno" href="${esc(linkJuego(juego.id, "entreno"))}"><strong>${esc(juego.titulo)}</strong><span>Práctica · ${esc(juego.detalle)}</span></a>`
     ).join("");
     return `<section class="screen">
         ${cabeza("GYM")}
         <div class="body">
             <h1>ENTRENAR</h1>
-            <p class="lead">${esc(state.nombre || "Tu jugador")} · dificultad ${esc(textoDificultad(state.dificultad))}. Si cumplís la meta, esa habilidad sube 2. Si no llegás, no sube.</p>
+            <p class="lead">${esc(state.nombre || "Tu jugador")} · dificultad ${esc(textoDificultad(state.dificultad))}. Es solo práctica. Ganar no sube las estadísticas ni el calibre.</p>
             ${state.flash ? `<p class="flash">${esc(state.flash)}</p>` : ""}
             <div class="opciones">${lista}</div>
             ${fraseBtn("entrenar")}

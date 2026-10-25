@@ -31,13 +31,13 @@ button:focus-visible{outline:4px solid #fff;outline-offset:2px}
     <canvas id="cv" aria-label="Cancha vista desde arriba. Tocá a un compañero para pasarle la pelota."></canvas>
     <div class="capa" id="capa">
       <h1 id="tit">Pase Relámpago</h1>
-      <p id="txt">Pasá la pelota antes de que se acabe la posesión.<br>Si un defensor toca el pase, la perdés.<br>La meta del entreno es 8 pases.<br><span class="v">Verde: pase libre.</span><br><span class="r">Rojo: pase en riesgo.</span></p>
+      <p id="txt">Pasá la pelota antes de que se acabe la posesión.<br>Si un defensor toca el pase, la perdés.<br>La meta del entreno es 15 pases.<br><span class="v">Verde: pase libre.</span><br><span class="r">Rojo: pase en riesgo.</span></p>
       <button id="ok" type="button">Jugar</button>
     </div>
   </div>
 </main>
 </div>
-<p class="mini-ayuda">Tocá a un compañero o usá las teclas 1, 2 y 3. La meta es 8 pases.</p>
+<p class="mini-ayuda">Tocá a un compañero o usá las teclas 1, 2 y 3. La meta es 15 pases.</p>
 <script>
 (() => {
   const W = 320, H = 200;
@@ -86,9 +86,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:2px}
     const nuevo = pts > mejor;
     if (nuevo) { mejor = pts; try { localStorage.setItem('pase-relampago', mejor); } catch (e) {} $('mejor').textContent = mejor; }
     $('tit').textContent = m;
-    $('txt').textContent = 'Pases: ' + pts + (pts >= 8 ? '. Entrenamiento cumplido.' : '. La meta es 8 pases.') + (nuevo ? ' ¡Nuevo récord!' : '');
+    $('txt').textContent = 'Pases: ' + pts + (pts >= 15 ? '. Entrenamiento cumplido.' : '. La meta es 15 pases.') + (nuevo ? ' ¡Nuevo récord!' : '');
     if (window.rookieMarcar) window.rookieMarcar(false);
-    if (window.rookieSumar) window.rookieSumar('pase', pts >= 8, { pases: pts });
+    if (window.rookieSumar) window.rookieSumar('pase', pts >= 15, { pases: pts });
     $('ok').textContent = 'Continuar';
     $('capa').hidden = false; $('ok').focus(); dibujar();
   }

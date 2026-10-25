@@ -116,7 +116,7 @@
       <p id="ov-text">
         Izquierda y Derecha cambian de carril. Arriba o Espacio salta.
         Esquivá las vallas rojas, saltá las naranjas y juntá pelotas.
-        En el celu, deslizá o tocá. La tecla M apaga el sonido. La meta es 200 puntos.
+        En el celu, deslizá o tocá. La tecla M apaga el sonido. La meta es 3500 puntos.
       </p>
       <form id="save-form" hidden>
         <input id="name" maxlength="12" placeholder="TU NOMBRE" autocomplete="nickname" aria-label="Tu nombre">
@@ -128,7 +128,7 @@
   </div>
 </main>
 </div>
-<p class="mini-ayuda">Las flechas o A y D cambian de carril. Arriba o Espacio salta. La meta es 200 puntos.</p>
+<p class="mini-ayuda">Las flechas o A y D cambian de carril. Arriba o Espacio salta. La meta es 3500 puntos.</p>
 <script>
 (() => {
   'use strict';
@@ -144,7 +144,7 @@
     const fila = document.cookie.split('; ').find((item) => item.indexOf('XSRF-TOKEN=') === 0);
     return fila ? decodeURIComponent(fila.slice('XSRF-TOKEN='.length)) : '';
   }
-  const META = 200;
+  const META = 3500;
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -468,7 +468,7 @@
     const sc = getScore();
     if (sc > best) { best = sc; store.set('dh-runner-best', String(best)); }
     ovTitle.textContent = 'GAME OVER';
-    ovText.textContent = 'Hiciste ' + sc + ' puntos. ' + (sc >= META ? 'Entrenamiento cumplido.' : 'La meta del entreno es 200.');
+    ovText.textContent = 'Hiciste ' + sc + ' puntos. ' + (sc >= META ? 'Entrenamiento cumplido.' : 'La meta del entreno es 3500.');
     if (window.rookieMarcar) window.rookieMarcar(false);
     if (window.rookieSumar) window.rookieSumar('dribling', sc >= META, { puntos: sc });
     form.hidden = sc === 0;

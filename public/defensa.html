@@ -1101,7 +1101,7 @@ let ultimoTiempo = 0;
 
 const dificultadPedido = new URLSearchParams(location.search).get("dificultad") || "baja";
 const textoDificultad = dificultadPedido === "alta" ? "ALTA" : (dificultadPedido === "media" ? "MEDIA" : "FACIL");
-const ritmoBase = dificultadPedido === "alta" ? 520 : (dificultadPedido === "media" ? 650 : 860);
+const ritmoBase = dificultadPedido === "alta" ? 460 : (dificultadPedido === "media" ? 580 : 760);
 const cartelDificultad = document.querySelector(".difficulty");
 if (cartelDificultad) cartelDificultad.textContent = "DIFICULTAD: " + textoDificultad;
 
@@ -1316,8 +1316,8 @@ function crearPelota() {
     */
 
     const velocidad =
-        205 +
-        Math.random() * 105;
+        235 +
+        Math.random() * 115;
 
 
 
@@ -1420,8 +1420,8 @@ function crearPelota() {
 
     intervalo =
         Math.max(
-            280,
-            intervalo - 11
+            240,
+            intervalo - 14
         );
 
 }

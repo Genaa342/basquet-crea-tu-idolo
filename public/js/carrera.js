@@ -8,9 +8,9 @@ const STATS_CARRERA = [
 ];
 
 const ENTRENO_CARRERA = {
-    tiro: { titulo: "Tiro al aro", detalle: "20 puntos suben el tiro", juego: "tiro" },
-    pase: { titulo: "Pase relámpago", detalle: "8 pases suben el control", juego: "pase" },
-    dribling: { titulo: "Dribling", detalle: "200 puntos suben la velocidad", juego: "dribling" },
+    tiro: { titulo: "Tiro al aro", detalle: "75 puntos suben el tiro", juego: "tiro" },
+    pase: { titulo: "Pase relámpago", detalle: "15 pases suben el control", juego: "pase" },
+    dribling: { titulo: "Dribling", detalle: "3500 puntos suben la velocidad", juego: "dribling" },
     memoria: { titulo: "Memoria", detalle: "Sube el tiro del partido", juego: "memoria" },
     simon: { titulo: "Simón", detalle: "Sube el control del pase", juego: "simon" },
     defensa: { titulo: "Defensa", detalle: "Tapá el aro", juego: "defensa" },
@@ -346,10 +346,12 @@ function nombreRonda(momento) {
 
 const PARTIDOS_LNB = 5;
 const VICTORIAS_PLAYOFF_LNB = 3;
-const CHANCE_OFERTA_NBA = 8;
-const CHANCE_OFERTA_NBA_ALTA = 80;
-const GRAL_OFERTA_ALTA = 75;
-const XP_MINIJUEGO = 7;
+const GRAL_NBA_DESDE = 55;
+const CHANCE_NBA_ANTES = 8;
+const CHANCE_NBA_EN_55 = 20;
+const CHANCE_NBA_POR_PUNTO = 3;
+const CHANCE_NBA_TECHO = 98;
+const XP_MINIJUEGO = 5;
 
 function enLigaNacional() {
     const eq = typeof equipoActual === "function" ? equipoActual() : null;
@@ -375,8 +377,26 @@ function prepararTemporadaLnb() {
     c.partido = null;
 }
 
+function chanceNbaPorMedia(media) {
+    const g = Math.round(Number(media) || 0);
+    if (g < GRAL_NBA_DESDE) return CHANCE_NBA_ANTES;
+    return Math.min(CHANCE_NBA_TECHO, CHANCE_NBA_EN_55 + (g - GRAL_NBA_DESDE) * CHANCE_NBA_POR_PUNTO);
+}
+
 function chanceOfertaNba() {
-    return grlCarrera() >= GRAL_OFERTA_ALTA ? CHANCE_OFERTA_NBA_ALTA : CHANCE_OFERTA_NBA;
+    return chanceNbaPorMedia(grlCarrera());
+}
+
+function proximaMediaNba() {
+    const g = grlCarrera();
+    if (chanceNbaPorMedia(g) >= CHANCE_NBA_TECHO) return null;
+    return g < GRAL_NBA_DESDE ? GRAL_NBA_DESDE : g + 1;
+}
+
+function fraseProximaChanceNba() {
+    const siguiente = proximaMediaNba();
+    if (!siguiente) return " Con esta media la chance queda en " + CHANCE_NBA_TECHO + "%.";
+    return " En " + siguiente + " sube a " + chanceNbaPorMedia(siguiente) + "%.";
 }
 
 function equiposNbaAlAlcance() {
@@ -389,10 +409,12 @@ function equiposNbaAlAlcance() {
 function equiposOfertaNba() {
     const aptos = equiposNbaAlAlcance();
     if (aptos.length) return aptos;
-    if (grlCarrera() < GRAL_OFERTA_ALTA) return [];
     const g = grlCarrera();
+    if (g < GRAL_NBA_DESDE) return [];
+    // Antes de alcanzar el piso (78), desde 55 ya pueden llamar los clubes de abajo.
+    const techo = g >= 75 ? g + 5 : 80;
     return clubesLiga("NBA")
-        .filter((club) => Number(club.minima) <= g + 5)
+        .filter((club) => Number(club.minima) <= techo)
         .sort((a, b) => Number(a.minima) - Number(b.minima));
 }
 
@@ -411,26 +433,54 @@ function evaluarOfertaNba() {
 }
 
 function textoOfertaNba(oferta) {
+    const g = grlCarrera();
     const chance = chanceOfertaNba();
-    const alta = grlCarrera() >= GRAL_OFERTA_ALTA;
     if (oferta && oferta.llega) {
-        return alta
-            ? " Llegó una oferta de la NBA. Con media " + grlCarrera() + " la chance era del " + chance + "%."
-            : " Llegó una oferta de la NBA. Con esta media la chance era del " + chance + "%.";
+        return " Llegó una oferta de la NBA. Con media " + g + " la chance era del " + chance + "%.";
     }
-    if (!alta && !equiposOfertaNba().length) {
-        return " Ningún club de la NBA llega a tu media. Desde 75, la chance de una oferta pasa a ser alta.";
+    if (g < GRAL_NBA_DESDE) {
+        return " Ningún club de la NBA mira esta media. Desde 55, cada punto suma " + CHANCE_NBA_POR_PUNTO + "% a la chance.";
     }
-    return " No llegó ninguna oferta de la NBA. Esta temporada la chance era del " + chance + "%.";
+    if (!equiposOfertaNba().length) {
+        return " Ningún club de la NBA llega a tu media." + fraseProximaChanceNba();
+    }
+    return " No llegó ninguna oferta de la NBA. Esta temporada la chance era del " + chance + "%." + fraseProximaChanceNba();
 }
 
 function limpiarEntreno() {
     const c = asegurarCarrera();
+    if (Array.isArray(c.minijuegos) && c.minijuegos.length) c.ultimoTrio = c.minijuegos.slice();
     c.jugados = [];
     c.espera = null;
     c.ofertaEntreno = null;
     c.minijuegos = null;
     c.minijuegosTemporada = null;
+}
+
+function repartirMinijuegos(c) {
+    const todos = Object.keys(ENTRENO_CARRERA);
+    const yaEnMazo = {};
+    let mazo = (Array.isArray(c.mazoEntreno) ? c.mazoEntreno : []).filter((id) => {
+        if (!ENTRENO_CARRERA[id] || yaEnMazo[id]) return false;
+        yaEnMazo[id] = true;
+        return true;
+    });
+    if (mazo.length < 3) {
+        const anterior = (Array.isArray(c.ultimoTrio) ? c.ultimoTrio : []).filter((id) => ENTRENO_CARRERA[id]);
+        const ocupado = {};
+        mazo.forEach((id) => { ocupado[id] = true; });
+        anterior.forEach((id) => { ocupado[id] = true; });
+        const frescos = mezclarCarrera(todos.filter((id) => !ocupado[id]));
+        const repetidos = mezclarCarrera(anterior.filter((id) => mazo.indexOf(id) === -1));
+        const visto = {};
+        mazo = mazo.concat(frescos, repetidos).filter((id) => {
+            if (visto[id]) return false;
+            visto[id] = true;
+            return true;
+        });
+    }
+    c.mazoEntreno = mazo.slice(3);
+    return mazo.slice(0, 3);
 }
 
 function asegurarMinijuegosTemporada() {
@@ -439,7 +489,8 @@ function asegurarMinijuegosTemporada() {
     const lista = Array.isArray(c.minijuegos) ? c.minijuegos : [];
     const sirve = lista.length === 3 && Number(c.minijuegosTemporada) === temp && lista.every((id) => ENTRENO_CARRERA[id]);
     if (!sirve) {
-        c.minijuegos = mezclarCarrera(Object.keys(ENTRENO_CARRERA)).slice(0, 3);
+        if (Number(c.minijuegosTemporada) !== temp && lista.length) c.ultimoTrio = lista.slice();
+        c.minijuegos = repartirMinijuegos(c);
         c.minijuegosTemporada = temp;
         c.jugados = (c.jugados || []).filter((id) => c.minijuegos.indexOf(id) !== -1);
         if (typeof guardarLocal === "function") guardarLocal();
@@ -501,41 +552,87 @@ function candidatosRonda(liga, mio, ronda, usados) {
     return resto.length ? resto : (base.length ? base : liga);
 }
 
+function historialRivales() {
+    const c = asegurarCarrera();
+    if (!Array.isArray(c.historialRivales)) c.historialRivales = [];
+    c.historialRivales = c.historialRivales.filter((item) => item && item.id && item.liga);
+    return c.historialRivales;
+}
+
+function mapaRivales(liga, pred) {
+    const mapa = {};
+    historialRivales().forEach((item) => {
+        if (item.liga === liga && pred(item)) mapa[Number(item.id)] = true;
+    });
+    return mapa;
+}
+
+function anotarHistorialRival(id) {
+    const n = Number(id);
+    if (!n) return;
+    const mio = typeof equipoActual === "function" ? equipoActual() : null;
+    const liga = mio ? mio.liga : "";
+    const temp = Number(state.temporada) || 1;
+    const lista = historialRivales();
+    const ya = lista.some((item) => Number(item.id) === n && Number(item.temporada) === temp && item.liga === liga);
+    if (!ya) lista.push({ id: n, temporada: temp, liga: liga });
+}
+
+function tomarRival(grupos) {
+    for (let i = 0; i < grupos.length; i++) {
+        const lista = grupos[i];
+        if (lista && lista.length) return lista[Math.floor(Math.random() * lista.length)];
+    }
+    return null;
+}
+
 function rivalDelPartido() {
     const mio = typeof equipoActual === "function" ? equipoActual() : null;
     if (!mio) return null;
     const liga = (equipos || []).filter((eq) => eq.liga === mio.liga && Number(eq.id) !== Number(mio.id));
     if (!liga.length) return null;
     const c = asegurarCarrera();
+    const temp = Number(state.temporada) || 1;
+    const esta = mapaRivales(mio.liga, (item) => Number(item.temporada) === temp);
+    const alguna = mapaRivales(mio.liga, () => true);
+    const anterior = mapaRivales(mio.liga, (item) => Number(item.temporada) === temp - 1);
+    let preferidos = liga;
     if (faseLnb()) {
         const usados = (c.lnbRivales || []).map(Number);
-        let candidatos = liga.filter((eq) => usados.indexOf(Number(eq.id)) === -1);
-        if (!candidatos.length) candidatos = liga;
-        const rival = candidatos[Math.floor(Math.random() * candidatos.length)];
-        if (rival) {
-            const id = Number(rival.id);
-            c.lnbRivales = c.lnbRivales || [];
-            if (c.lnbRivales.indexOf(id) === -1) c.lnbRivales.push(id);
+        const frescos = liga.filter((eq) => usados.indexOf(Number(eq.id)) === -1 && !esta[Number(eq.id)]);
+        preferidos = frescos.length ? frescos : liga.filter((eq) => !esta[Number(eq.id)]);
+        if (!preferidos.length) preferidos = liga;
+    } else if (rondaTemporada()) {
+        preferidos = candidatosRonda(liga, mio, rondaTemporada(), serieRivales().map(Number));
+    } else {
+        c.rivalesApertura = c.rivalesApertura || {};
+        const vetado = esCierrePartido() ? Number(c.rivalesApertura[tramoRival()]) : 0;
+        if (vetado) {
+            const sinEse = liga.filter((eq) => Number(eq.id) !== vetado);
+            if (sinEse.length) preferidos = sinEse;
         }
-        return rival;
     }
-    const ronda = rondaTemporada();
-    if (ronda) {
-        const candidatos = candidatosRonda(liga, mio, ronda, serieRivales().map(Number));
-        const rival = candidatos[Math.floor(Math.random() * candidatos.length)];
-        if (rival) anotarRivalSerie(rival.id);
-        anotarRivalApertura(rival && rival.id);
-        return rival;
+    const libre = (eq) => !esta[Number(eq.id)];
+    const nuevo = (eq) => !alguna[Number(eq.id)];
+    const noAnterior = (eq) => !anterior[Number(eq.id)];
+    const rival = tomarRival([
+        preferidos.filter((eq) => libre(eq) && nuevo(eq)),
+        liga.filter((eq) => libre(eq) && nuevo(eq)),
+        preferidos.filter((eq) => libre(eq) && noAnterior(eq)),
+        liga.filter((eq) => libre(eq) && noAnterior(eq)),
+        preferidos.filter(libre),
+        liga.filter(libre),
+        preferidos.length ? preferidos : liga
+    ]);
+    if (!rival) return null;
+    const id = Number(rival.id);
+    if (faseLnb()) {
+        c.lnbRivales = c.lnbRivales || [];
+        if (c.lnbRivales.indexOf(id) === -1) c.lnbRivales.push(id);
     }
-    c.rivalesApertura = c.rivalesApertura || {};
-    const vetado = esCierrePartido() ? Number(c.rivalesApertura[tramoRival()]) : 0;
-    let candidatos = liga;
-    if (vetado) {
-        const sinEse = liga.filter((eq) => Number(eq.id) !== vetado);
-        if (sinEse.length) candidatos = sinEse;
-    }
-    const rival = candidatos[Math.floor(Math.random() * candidatos.length)];
-    anotarRivalApertura(rival.id);
+    anotarRivalSerie(id);
+    anotarRivalApertura(id);
+    anotarHistorialRival(id);
     return rival;
 }
 
@@ -1071,7 +1168,7 @@ function pantallaPortada() {
         lead = "Ya estás en la NBA. La temporada sigue con este club.";
     } else if (eq && eq.liga === "LNB") {
         boton = "Arrancar la Liga Nacional";
-        lead = "Son 5 partidos. Si ganás 3, jugás desde los cuartos por el título, siempre contra equipos distintos. Desde una media de 75, una oferta de la NBA tiene altas chances.";
+        lead = "Son 5 partidos. Si ganás 3, jugás los cuartos. Los rivales no se repiten de una temporada a la otra. La oferta de la NBA sube con cada punto de media desde 55.";
     } else if (eq && !c.localHecha) {
         boton = "Arrancar el año en " + eq.nombre;
         lead = "El primer año es en " + eq.nombre + " (" + eq.liga + "). Después viene el draft.";
@@ -1134,7 +1231,7 @@ function pantallaDraftNBA() {
     return marcoCarrera("OFERTA NBA", `
         ${tableroCarrera(false)}
         <h1>OFERTA<br><span>DE LA NBA</span></h1>
-        <p class="lead">${grlCarrera() >= GRAL_OFERTA_ALTA ? "Con esta media los clubes de la NBA llaman seguido." : "Llegó una oferta. Con esta media pasa muy pocas veces."} Tu media es ${grlCarrera()}.</p>
+        <p class="lead">Llegó la NBA. Con media ${grlCarrera()} la chance era del ${chanceOfertaNba()}%.</p>
         ${vacio}
     `, botones + seguir);
 }
@@ -1264,7 +1361,10 @@ function pantallaOff() {
             <button class="btn ghost" data-mc="omitir">Dejarlo para después</button>
             ${ofertas}`);
     }
-    const lista = Object.keys(ENTRENO_CARRERA).map((id) => {
+    const cerrados = Object.keys(ENTRENO_CARRERA).filter((id) => juegos.indexOf(id) === -1);
+    const hechos = juegos.filter((id) => jugados.indexOf(id) !== -1);
+    const abiertos = juegos.filter((id) => jugados.indexOf(id) === -1);
+    const lista = abiertos.concat(hechos, cerrados).map((id) => {
         const ent = ENTRENO_CARRERA[id];
         const habilitado = juegos.indexOf(id) !== -1;
         if (!habilitado) {
@@ -1275,10 +1375,10 @@ function pantallaOff() {
         }
         return `<a class="opcion mini" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}"><strong>${esc(ent.titulo)}</strong><span>${XP_MINIJUEGO} XP si ganás</span></a>`;
     }).join("");
-    const quedan = juegos.filter((id) => jugados.indexOf(id) === -1).length;
+    const quedan = abiertos.length;
     const lead = quedan
-        ? "Hay 3 minijuegos habilitados, sorteados al azar. Si ganás, sumás " + XP_MINIJUEGO + " XP y lo podés gastar entero."
-        : "Ya jugaste los 3 minijuegos de esta temporada. El XP que juntaste lo podés gastar en las estadísticas.";
+        ? "Hay 3 minijuegos habilitados. El resto vuelve otra temporada. Si ganás, sumás " + XP_MINIJUEGO + " XP."
+        : "Ya jugaste los 3 minijuegos de esta temporada. El XP queda para las estadísticas.";
     return marcoCarrera("ENTRENAR", `
         <h1>ENTRENAR</h1>
         <p class="lead">${esc(lead)}</p>
@@ -1296,12 +1396,12 @@ function pantallaOfertasCarrera() {
     const vacio = lista.length
         ? ""
         : (eq && eq.liga === "LNB"
-            ? `<p class="lead">Este año la NBA no llamó. Desde una media de 75 la chance es del ${CHANCE_OFERTA_NBA_ALTA}%.</p>`
+            ? `<p class="lead">Este año la NBA no llamó.</p>`
             : `<p class="lead">Nadie llega a tu media ${grlCarrera()}. Entrená y volvé. La NBA abre en 78.</p>`);
     const retiro = (state.edad || 0) >= 33 ? `<button class="btn ghost" data-mc="jubilar">Retirarme</button>` : "";
     const quedar = eq ? `<button class="btn ghost" data-mc="quedar">Quedarme en ${esc(eq.nombre)}</button>` : "";
     const avisoNba = eq && eq.liga === "LNB"
-        ? " Desde una media de 75, una oferta de la NBA tiene altas chances."
+        ? " La chance de una oferta de la NBA es del " + chanceOfertaNba() + "%." + fraseProximaChanceNba()
         : "";
     return marcoCarrera("MERCADO", `
         ${tableroCarrera(false)}

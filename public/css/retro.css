@@ -964,10 +964,16 @@ button, input, select, textarea { touch-action: manipulation; }
 }
 
 #app .opcion.mini.bloqueado {
-    opacity: 1;
+    opacity: 0.48;
+    pointer-events: none;
+    cursor: not-allowed;
     background: rgba(6, 12, 28, 0.82);
     border-color: rgba(208, 208, 208, 0.35);
     box-shadow: none;
+}
+
+#app .opcion.mini.bloqueado.jugado {
+    opacity: 0.72;
 }
 
 #app .opcion.mini.bloqueado strong {
