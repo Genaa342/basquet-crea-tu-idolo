@@ -63,6 +63,19 @@ function asegurarCarrera() {
     c.forma = c.forma == null ? 70 : Number(c.forma);
     c.momento = c.momento || 0;
     c.paso = c.paso || "portada";
+    c.lnbRivales = c.lnbRivales || [];
+    c.lnbGanados = Number(c.lnbGanados) || 0;
+    if (c.paso === "debut" && typeof equipoActual === "function") {
+        const club = equipoActual();
+        if (club && club.liga === "LNB") {
+            c.paso = "lnb";
+            c.momento = 0;
+            c.lnbGanados = 0;
+            c.lnbRivales = [];
+            c.evento = null;
+            c.partido = null;
+        }
+    }
     if (!state.rival) state.rival = { nombre: "EL ELEGIDO", puntos: 18, titulos: 0 };
     if (!state.stats && state.posicion && typeof BASES !== "undefined") {
         state.stats = Object.assign({}, BASES[state.posicion]);
@@ -164,7 +177,7 @@ function debuts() {
         ] },
         { t: "CLÁSICO LOCAL", d: "Se juega con los dientes apretados. Varias posesiones, y en cada una decidís vos.", partido: true },
         { t: "SEMANA LARGA", d: "Tres partidos en siete días. El cuerpo avisa.", op: [
-            { t: "Gym de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El tiro ya está en 99. Las piernas pesan.", out: "neutro" }; } },
+            { t: "Gym de tiro", fx: () => { state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: "Trabajaste el tiro. Las piernas pesan. El número sube con el XP del entreno.", out: "neutro" }; } },
             { t: "Descansar", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 14, 0, 100); return { det: "Llegás fresco.", out: "neutro" }; } }
         ] },
         { t: "CIERRE DEL AÑO", d: "Último partido antes del draft. Hay scouts en la tribuna.", partido: true }
@@ -174,7 +187,7 @@ function debuts() {
 function personales() {
     return [
         { t: "DÍA LIBRE", d: "Mañana hay partido. El cuerpo pide una cosa y la cabeza otra.", op: [
-            { t: "Gym extra de tiro", fx: () => { const sube = subirCampo("tiro", 1); state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: sube ? "Tiro +" + sube + ". Las piernas pesan." : "El tiro ya está en 99. Las piernas pesan.", out: "neutro" }; } },
+            { t: "Gym extra de tiro", fx: () => { state.carrera.forma = clamp(state.carrera.forma - 8, 0, 100); return { det: "Trabajaste el tiro. Las piernas pesan. El número sube con el XP del entreno.", out: "neutro" }; } },
             { t: "Descansar", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 14, 0, 100); sumarHinchada(3); return { det: "Forma arriba. La gente banca.", out: "neutro" }; } }
         ] },
         { t: "NOCHE DE CLÁSICO", d: "El Elegido dijo que tu equipo no existe.", op: [
@@ -182,7 +195,7 @@ function personales() {
             { t: "Dormir", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 10, 0, 100); return { det: "Fresco para el salto inicial.", out: "neutro" }; } }
         ] },
         { t: "PEDIDO DEL DT", d: "Quiere que labures el físico esta semana.", op: [
-            { t: "Meterle a la fuerza", fx: () => { const sube = subirCampo("rebote", 1); state.carrera.forma = clamp(state.carrera.forma - 6, 0, 100); return { det: sube ? "Fuerza +" + sube + "." : "La fuerza ya está en 99.", out: "neutro" }; } },
+            { t: "Meterle a la fuerza", fx: () => { state.carrera.forma = clamp(state.carrera.forma - 6, 0, 100); return { det: "Trabajaste la fuerza. El número sube con el XP del entreno.", out: "neutro" }; } },
             { t: "Guardarte", fx: () => { state.carrera.forma = clamp(state.carrera.forma + 8, 0, 100); return { det: "Llegás entero al partido.", out: "neutro" }; } }
         ] },
         { t: "MICRÓFONO", d: "Te entrevistan a la salida. Todo el país mira.", op: [
@@ -331,6 +344,131 @@ function nombreRonda(momento) {
     return ["", "PRIMERA RONDA", "SEMIFINALES", "FINAL DE CONFERENCIA", "FINALES DEL MUNDO"][Number(momento)] || "";
 }
 
+const PARTIDOS_LNB = 5;
+const VICTORIAS_PLAYOFF_LNB = 3;
+const CHANCE_OFERTA_NBA = 8;
+const CHANCE_OFERTA_NBA_ALTA = 80;
+const GRAL_OFERTA_ALTA = 75;
+const XP_MINIJUEGO = 7;
+
+function enLigaNacional() {
+    const eq = typeof equipoActual === "function" ? equipoActual() : null;
+    return !!(eq && eq.liga === "LNB");
+}
+
+function faseLnb() {
+    const paso = state.carrera && state.carrera.paso;
+    return paso === "lnb" || paso === "lnbplayoff";
+}
+
+function nombreRondaLnb(momento) {
+    return ["", "CUARTOS DE FINAL", "SEMIFINAL", "FINAL DE LA LIGA"][Number(momento)] || "";
+}
+
+function prepararTemporadaLnb() {
+    const c = asegurarCarrera();
+    c.paso = "lnb";
+    c.momento = 0;
+    c.lnbGanados = 0;
+    c.lnbRivales = [];
+    c.evento = null;
+    c.partido = null;
+}
+
+function chanceOfertaNba() {
+    return grlCarrera() >= GRAL_OFERTA_ALTA ? CHANCE_OFERTA_NBA_ALTA : CHANCE_OFERTA_NBA;
+}
+
+function equiposNbaAlAlcance() {
+    const g = grlCarrera();
+    return clubesLiga("NBA")
+        .filter((club) => g >= Number(club.minima))
+        .sort((a, b) => Number(b.minima) - Number(a.minima));
+}
+
+function equiposOfertaNba() {
+    const aptos = equiposNbaAlAlcance();
+    if (aptos.length) return aptos;
+    if (grlCarrera() < GRAL_OFERTA_ALTA) return [];
+    const g = grlCarrera();
+    return clubesLiga("NBA")
+        .filter((club) => Number(club.minima) <= g + 5)
+        .sort((a, b) => Number(a.minima) - Number(b.minima));
+}
+
+function evaluarOfertaNba() {
+    const c = asegurarCarrera();
+    const temporada = Number(state.temporada) || 1;
+    if (c.sorteoNba && Number(c.sorteoNba.temporada) === temporada) return c.sorteoNba;
+    const aptos = equiposOfertaNba();
+    const llega = aptos.length > 0 && Math.random() * 100 < chanceOfertaNba();
+    c.sorteoNba = {
+        temporada: temporada,
+        llega: llega,
+        ids: llega ? aptos.slice(0, 3).map((club) => Number(club.id)) : []
+    };
+    return c.sorteoNba;
+}
+
+function textoOfertaNba(oferta) {
+    const chance = chanceOfertaNba();
+    const alta = grlCarrera() >= GRAL_OFERTA_ALTA;
+    if (oferta && oferta.llega) {
+        return alta
+            ? " Llegó una oferta de la NBA. Con media " + grlCarrera() + " la chance era del " + chance + "%."
+            : " Llegó una oferta de la NBA. Con esta media la chance era del " + chance + "%.";
+    }
+    if (!alta && !equiposOfertaNba().length) {
+        return " Ningún club de la NBA llega a tu media. Desde 75, la chance de una oferta pasa a ser alta.";
+    }
+    return " No llegó ninguna oferta de la NBA. Esta temporada la chance era del " + chance + "%.";
+}
+
+function limpiarEntreno() {
+    const c = asegurarCarrera();
+    c.jugados = [];
+    c.espera = null;
+    c.ofertaEntreno = null;
+    c.minijuegos = null;
+    c.minijuegosTemporada = null;
+}
+
+function asegurarMinijuegosTemporada() {
+    const c = asegurarCarrera();
+    const temp = Number(state.temporada) || 1;
+    const lista = Array.isArray(c.minijuegos) ? c.minijuegos : [];
+    const sirve = lista.length === 3 && Number(c.minijuegosTemporada) === temp && lista.every((id) => ENTRENO_CARRERA[id]);
+    if (!sirve) {
+        c.minijuegos = mezclarCarrera(Object.keys(ENTRENO_CARRERA)).slice(0, 3);
+        c.minijuegosTemporada = temp;
+        c.jugados = (c.jugados || []).filter((id) => c.minijuegos.indexOf(id) !== -1);
+        if (typeof guardarLocal === "function") guardarLocal();
+    }
+    return c.minijuegos;
+}
+
+function resolverPendLnb(p, gano) {
+    const c = asegurarCarrera();
+    if (p.paso === "lnb") {
+        if (gano) c.lnbGanados = (Number(c.lnbGanados) || 0) + 1;
+        const jugados = Number(p.momento) + 1;
+        const ganados = Number(c.lnbGanados) || 0;
+        const marca = ganados + "-" + (jugados - ganados);
+        if (jugados < PARTIDOS_LNB) {
+            return { pend: "lnb", extra: " Vas " + marca + " en " + PARTIDOS_LNB + ". Con " + VICTORIAS_PLAYOFF_LNB + " victorias se juegan los cuartos, contra equipos distintos." };
+        }
+        if (ganados >= VICTORIAS_PLAYOFF_LNB) {
+            return { pend: "lnbplayoff", extra: " Cerraste " + marca + ". Entrás a los cuartos de final por el título. Cada cruce es contra un equipo distinto." };
+        }
+        return { pend: "finlnb", extra: " Cerraste " + marca + ". Hacen falta " + VICTORIAS_PLAYOFF_LNB + " victorias para las eliminatorias." };
+    }
+    const ronda = nombreRondaLnb(p.momento).toLowerCase();
+    if (!gano) return { pend: "finlnb", extra: " Quedaste afuera en " + ronda + "." };
+    if (Number(p.momento) >= 3) return { pend: "finlnb", extra: " Campeón de la Liga Nacional." };
+    const siguiente = nombreRondaLnb(Number(p.momento) + 1).toLowerCase();
+    return { pend: "lnbplayoff", extra: " Ganaste " + ronda + ". Lo que sigue es " + siguiente + ", contra otro equipo." };
+}
+
 function anotarRivalApertura(id) {
     if (!esAperturaPartido() || !id) return;
     const c = asegurarCarrera();
@@ -369,6 +507,18 @@ function rivalDelPartido() {
     const liga = (equipos || []).filter((eq) => eq.liga === mio.liga && Number(eq.id) !== Number(mio.id));
     if (!liga.length) return null;
     const c = asegurarCarrera();
+    if (faseLnb()) {
+        const usados = (c.lnbRivales || []).map(Number);
+        let candidatos = liga.filter((eq) => usados.indexOf(Number(eq.id)) === -1);
+        if (!candidatos.length) candidatos = liga;
+        const rival = candidatos[Math.floor(Math.random() * candidatos.length)];
+        if (rival) {
+            const id = Number(rival.id);
+            c.lnbRivales = c.lnbRivales || [];
+            if (c.lnbRivales.indexOf(id) === -1) c.lnbRivales.push(id);
+        }
+        return rival;
+    }
     const ronda = rondaTemporada();
     if (ronda) {
         const candidatos = candidatosRonda(liga, mio, ronda, serieRivales().map(Number));
@@ -431,7 +581,7 @@ function asegurarPartido() {
         anotarRivalSerie(c.partido.rivalId);
         return c.partido;
     }
-    const final = c.paso === "temporada" && Number(c.momento) === 4;
+    const final = (c.paso === "temporada" && Number(c.momento) === 4) || (c.paso === "lnbplayoff" && Number(c.momento) === 3);
     const rival = rivalDelPartido();
     const total = c.paso === "debut" ? 3 : (final ? 5 : 4);
     const posesiones = [];
@@ -545,8 +695,6 @@ function resolverOpcion(op, pend, final) {
 function jugarMomento(clave, final, pend) {
     const chance = probCarrera(clave);
     const gano = Math.random() * 100 < chance;
-    const sube = subirCampo(clave, gano ? 1 : 0);
-    const marca = sube ? nombreStat(clave) + " +" + sube : "sin subida";
     const mult = final ? 1.5 : 1;
     state.partidos = (state.partidos || 0) + 1;
     state.partidas = (state.partidas || 0) + 1;
@@ -567,16 +715,16 @@ function jugarMomento(clave, final, pend) {
             if (typeof sumarTrofeo === "function") {
                 sumarTrofeo(eq && eq.liga === "NBA" ? "CAMPEÓN NBA" : "ANILLO DE CAMPEÓN");
             }
-            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. " + marca + ". Título de liga.";
+            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. Título de liga.";
         } else {
-            detalle = "Entró. +" + pts + " pts, +" + xp + " XP. " + marca + ".";
+            detalle = "Entró. +" + pts + " pts, +" + xp + " XP.";
         }
         tipo = "bien";
     } else {
         state.puntosCarrera += 4;
         state.carrera.xp += 3;
         sumarHinchada(-4);
-        detalle = "No entró. " + marca + ". El equipo te banca.";
+        detalle = "No entró. El equipo te banca.";
         tipo = "mal";
     }
     reflejarCalibre();
@@ -597,9 +745,7 @@ function resolverPosesion(indice) {
     if (statAlta(op.stat) && gastadasPartido(p).indexOf(op.stat) === -1) {
         gastadasPartido(p).push(op.stat);
     }
-    const sube = subirCampo(op.stat, gano ? 1 : 0);
-    const marca = sube ? nombreStat(op.stat) + " +" + sube : nombreStat(op.stat) + " ya en 99";
-    reflejarCalibre();
+    const marca = nombreStat(op.stat);
     const ptsNos = gano ? PUNTOS_JUGADA : 0;
     const ptsEllos = gano ? 0 : PUNTOS_JUGADA;
     p.nuestros = (p.nuestros || 0) + ptsNos;
@@ -666,10 +812,17 @@ function cerrarPartido() {
     const marcador = (p.nuestros || 0) + "-" + (p.ellos || 0);
     const delta = grlCarrera() - (Number(p.grlInicio) || grlCarrera());
     const extra = delta > 0 ? " (+" + delta + ")" : "";
-    // Playoff de temporada: ganar sigue en el cuadro y perder deja afuera. El debut sigue su historia.
+    // La Liga Nacional suma 5 partidos y, con 3 victorias, elimina desde cuartos.
+    // El playoff de la NBA sigue en el cuadro si ganás y te deja afuera si perdés.
     let pend = "avanzar";
+    let extraLnb = "";
     if (p.paso === "debut") pend = p.momento < 4 ? "debut" : "draftnba";
-    else if (!gano && p.paso === "temporada") pend = "fuera";
+    else if (p.paso === "lnb" || p.paso === "lnbplayoff") {
+        const cierre = resolverPendLnb(p, gano);
+        pend = cierre.pend;
+        extraLnb = cierre.extra;
+        if (pend === "finlnb") extraLnb += textoOfertaNba(evaluarOfertaNba());
+    } else if (!gano && p.paso === "temporada") pend = "fuera";
     const eraFinal = !!p.final;
     const ot = Number(p.overtimes) || 0;
     const textoOt = ot ? " Overtime" + (ot > 1 ? "s: " + ot + "." : ".") : "";
@@ -690,28 +843,30 @@ function cerrarPartido() {
             state.titulos = (state.titulos || 0) + 1;
             const eq = equipoActual();
             if (typeof sumarTrofeo === "function") {
-                sumarTrofeo(eq && eq.liga === "NBA" ? "CAMPEÓN NBA" : "ANILLO DE CAMPEÓN");
+                const copa = eq && eq.liga === "NBA" ? "CAMPEÓN NBA" : (eq && eq.liga === "LNB" ? "CAMPEÓN LNB" : "ANILLO DE CAMPEÓN");
+                sumarTrofeo(copa);
             }
         }
         titulo = eraFinal ? "Campeones" : "Ganaron";
-        detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". +" + xp + " XP." + (eraFinal ? " Título de liga." : "");
+        detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". +" + xp + " XP." + (eraFinal && !extraLnb ? " Título de liga." : "") + extraLnb;
         tipo = "bien";
     } else {
-        // Derrota de playoff: afuera y la temporada que viene. Una derrota del debut no elimina.
+        // Derrota de playoff NBA: afuera y la temporada que viene. En la Liga Nacional cierra el año igual.
         c.xp += 3;
         sumarHinchada(-4);
         if (pend === "fuera") {
             titulo = "Afuera";
             detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". Quedaste afuera de los playoffs. +3 XP. Sigue la temporada " + ((Number(state.temporada) || 1) + 1) + ".";
         } else {
-            titulo = "Derrota";
-            detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". La cancha igual te hizo subir.";
+            titulo = pend === "finlnb" ? (p.paso === "lnbplayoff" ? "Afuera" : "Fin del año") : "Derrota";
+            detalle = "Cerraron " + marcador + "." + textoOt + " Media " + grlCarrera() + extra + ". +3 XP." + (extraLnb || " La cancha igual te hizo subir.");
         }
         tipo = "mal";
     }
     const cierre = {
         marcador: { nuestros: p.nuestros || 0, ellos: p.ellos || 0, rivalId: p.rivalId || null },
-        jugadas: (p.lineas || []).slice()
+        jugadas: (p.lineas || []).slice(),
+        fase: p.paso
     };
     c.partido = null;
     reflejarCalibre();
@@ -721,7 +876,13 @@ function cerrarPartido() {
 function ofertasCarrera() {
     const eq = equipoActual();
     const g = grlCarrera();
-    const pool = eq && eq.liga === "NBA" ? clubesLiga("NBA") : (equipos || []);
+    const c = asegurarCarrera();
+    let pool = eq && eq.liga === "NBA" ? clubesLiga("NBA") : (equipos || []);
+    if (!eq || eq.liga !== "NBA") {
+        const sorteo = c.sorteoNba;
+        const nbaAbierta = !!(sorteo && sorteo.llega && Number(sorteo.temporada) === (Number(state.temporada) || 1));
+        if (!nbaAbierta) pool = pool.filter((club) => club.liga !== "NBA");
+    }
     return pool
         .filter((club) => Number(club.id) !== Number(state.equipoId) && g >= Number(club.minima))
         .sort((a, b) => Number(b.minima) - Number(a.minima))
@@ -729,29 +890,36 @@ function ofertasCarrera() {
 }
 
 function draftNBA() {
-    const g = grlCarrera();
-    const nba = clubesLiga("NBA");
-    const aptos = nba.filter((club) => g >= Number(club.minima)).sort((a, b) => Number(b.minima) - Number(a.minima));
+    const c = asegurarCarrera();
+    if (c.sorteoNba && c.sorteoNba.llega && c.sorteoNba.ids && c.sorteoNba.ids.length && typeof clubPorId === "function") {
+        const lista = c.sorteoNba.ids.map((id) => clubPorId(id)).filter(Boolean);
+        if (lista.length) return lista;
+    }
+    const aptos = equiposNbaAlAlcance();
     if (aptos.length) return aptos.slice(0, 3);
-    return nba.slice().sort((a, b) => Number(a.minima) - Number(b.minima)).slice(0, 3);
+    if (c.paso === "draftnba") {
+        return clubesLiga("NBA").slice().sort((a, b) => Number(a.minima) - Number(b.minima)).slice(0, 3);
+    }
+    return [];
 }
 
 function siguienteTemporada() {
-    // Cierra el año: sube temporada y edad, y aplica el crecimiento anual una sola vez.
+    // Cierra el año: sube temporada y edad. Las estadísticas no se mueven solas.
     const c = state.carrera;
     state.temporada = (Number(state.temporada) || 1) + 1;
     state.edad = (Number(state.edad) || 19) + 1;
     if (typeof madurar === "function") state.flash = "Temporada " + state.temporada + ". " + madurar();
     c.momento = 0;
     c.usados = [];
-    c.jugados = [];
-    c.espera = null;
     c.evento = null;
     c.forma = clamp(c.forma + 15, 0, 100);
     c.partido = null;
-    c.ofertaEntreno = null;
     c.anioNuevo = false;
-    c.paso = (state.temporada > 15 || state.edad >= 38) ? "leyenda" : "temporada";
+    limpiarEntreno();
+    c.lnbGanados = 0;
+    c.lnbRivales = [];
+    c.sorteoNba = null;
+    c.paso = (state.temporada > 15 || state.edad >= 38) ? "leyenda" : (enLigaNacional() ? "lnb" : "temporada");
 }
 
 function pendTrasOferta() {
@@ -762,6 +930,7 @@ function pendTrasOferta() {
 function seguirResultado() {
     const c = asegurarCarrera();
     const pend = c.resultado ? c.resultado.pend : "temporada";
+    const fasePrevia = c.resultado ? c.resultado.fase : c.paso;
     c.resultado = null;
     if (pend === "debut") {
         // El debut es el año local: se sigue el relato aunque el partido se pierda.
@@ -779,9 +948,29 @@ function seguirResultado() {
             c.momento += 1;
             c.paso = "temporada";
         } else {
-            c.jugados = [];
-            c.espera = null;
+            limpiarEntreno();
             c.paso = "offentreno";
+        }
+    } else if (pend === "lnb") {
+        c.momento += 1;
+        c.paso = "lnb";
+    } else if (pend === "lnbplayoff") {
+        if (fasePrevia !== "lnbplayoff") {
+            c.paso = "lnbplayoff";
+            c.momento = 1;
+        } else {
+            c.paso = "lnbplayoff";
+            c.momento += 1;
+        }
+    } else if (pend === "finlnb") {
+        c.localHecha = true;
+        if (c.sorteoNba && c.sorteoNba.llega) {
+            c.paso = "draftnba";
+            c.momento = 0;
+        } else {
+            limpiarEntreno();
+            c.paso = "offentreno";
+            c.anioNuevo = false;
         }
     } else if (pend === "fuera") {
         // Eliminado: el año nuevo arranca y la pretemporada es la de esa temporada.
@@ -880,6 +1069,9 @@ function pantallaPortada() {
     } else if (eq && eq.liga === "NBA") {
         boton = "Seguir en " + eq.nombre;
         lead = "Ya estás en la NBA. La temporada sigue con este club.";
+    } else if (eq && eq.liga === "LNB") {
+        boton = "Arrancar la Liga Nacional";
+        lead = "Son 5 partidos. Si ganás 3, jugás desde los cuartos por el título, siempre contra equipos distintos. Desde una media de 75, una oferta de la NBA tiene altas chances.";
     } else if (eq && !c.localHecha) {
         boton = "Arrancar el año en " + eq.nombre;
         lead = "El primer año es en " + eq.nombre + " (" + eq.liga + "). Después viene el draft.";
@@ -909,7 +1101,7 @@ function pantallaDraft() {
             ${tableroCarrera(false)}
             <h1>${esc(eq.nombre)}</h1>
             <p class="lead">${esc(eq.ciudad || "")} · ${esc(eq.liga)}. Entrás al proyecto juvenil.</p>
-        `, `<button class="btn" data-mc="debut">Arrancar el año</button>`);
+        `, `<button class="btn" data-mc="debut">Arrancar la Liga Nacional</button>`);
     }
     return marcoCarrera("SORTEO", `
         <h1>CLUB<br><span>DE ORIGEN</span></h1>
@@ -937,13 +1129,14 @@ function pantallaDraftNBA() {
     const botones = lista.map((club, i) =>
         `<button class="btn ${i === 0 ? "" : "ghost"}" data-mc="pick" data-club="${club.id}">${esc(club.nombre)}<span class="sub">${esc(club.liga)} · pide ${club.minima}</span></button>`
     ).join("");
-    const vacio = lista.length ? "" : `<p class="lead">No hay clubes de la NBA.</p>`;
-    return marcoCarrera("DRAFT", `
+    const vacio = lista.length ? "" : `<p class="lead">No hay clubes de la NBA a tu alcance.</p>`;
+    const seguir = enLigaNacional() ? `<button class="btn ghost" data-mc="seguir-lnb">Seguir en la Liga Nacional</button>` : "";
+    return marcoCarrera("OFERTA NBA", `
         ${tableroCarrera(false)}
-        <h1>ELEGÍ<br><span>TU DESTINO</span></h1>
-        <p class="lead">Tu media es ${grlCarrera()}. Estos clubes de la NBA te toman.</p>
+        <h1>OFERTA<br><span>DE LA NBA</span></h1>
+        <p class="lead">${grlCarrera() >= GRAL_OFERTA_ALTA ? "Con esta media los clubes de la NBA llaman seguido." : "Llegó una oferta. Con esta media pasa muy pocas veces."} Tu media es ${grlCarrera()}.</p>
         ${vacio}
-    `, botones);
+    `, botones + seguir);
 }
 
 function juegoEntrenoRandom() {
@@ -1028,18 +1221,30 @@ function pantallaPartido() {
         : "";
     const enOt = p.overtimes && p.indice >= p.posesiones.length - 2;
     const ronda = p.paso === "temporada" ? nombreRonda(p.momento) : "";
-    const marca = enOt ? ("OVERTIME " + p.overtimes) : (ronda || (p.paso === "debut" && c.evento && c.evento.ev ? c.evento.ev.t : (p.final ? "FINAL" : "PARTIDO")));
+    const rondaLnb = p.paso === "lnbplayoff" ? nombreRondaLnb(p.momento) : "";
+    const partidoLnb = p.paso === "lnb" ? ("PARTIDO " + (Number(p.momento) + 1) + "/" + PARTIDOS_LNB) : "";
+    const marca = enOt ? ("OVERTIME " + p.overtimes) : (rondaLnb || ronda || partidoLnb || (p.paso === "debut" && c.evento && c.evento.ev ? c.evento.ev.t : (p.final ? "FINAL" : "PARTIDO")));
     const leadOt = enOt && p.indice === p.posesiones.length - 2
         ? (p.overtimes > 1 ? "Siguen empatados. " : "Empate. ") + "Overtime: dos jugadas para definir."
         : "";
     const leadRonda = !enOt && ronda && p.indice === 0
         ? (Number(p.momento) === 4 ? "Finales del mundo. El rival es de la otra conferencia. " : "El rival es de tu conferencia. ")
         : "";
-    return marcoCarrera("EN JUEGO · " + marca + " · " + (ronda ? Number(p.momento) + "/4 · " : "") + etiquetaPartido(p), `
-        <p class="en-juego">${enOt ? "OVERTIME" : (ronda || (p.final ? "FINAL" : "EN JUEGO"))}</p>
+    const ganadosLnb = Number(c.lnbGanados) || 0;
+    const leadLnb = !enOt && p.paso === "lnb" && p.indice === 0
+        ? "Liga Nacional. Van " + ganadosLnb + " victorias. Con " + VICTORIAS_PLAYOFF_LNB + " de " + PARTIDOS_LNB + " se juegan los cuartos. El rival no se repite. "
+        : "";
+    const leadPlayoff = !enOt && rondaLnb && p.indice === 0
+        ? (Number(p.momento) === 3
+            ? "Final de la Liga Nacional. El ganador se queda con el título. "
+            : "Eliminatoria por el título, contra un equipo que no enfrentaste. Clasificaste con " + ganadosLnb + " victorias. ")
+        : "";
+    const cuenta = (ronda ? Number(p.momento) + "/4 · " : "") + (partidoLnb ? partidoLnb + " · " : "") + (rondaLnb ? "ELIMINATORIA · " : "");
+    return marcoCarrera("EN JUEGO · " + marca + " · " + cuenta + etiquetaPartido(p), `
+        <p class="en-juego">${enOt ? "OVERTIME" : (rondaLnb || ronda || partidoLnb || (p.final ? "FINAL" : "EN JUEGO"))}</p>
         ${htmlMarcador(p.nuestros || 0, p.ellos || 0, p.rivalId)}
         <h1>${esc(pos.t)}</h1>
-        <p class="lead">${leadOt ? esc(leadOt) : ""}${leadRonda ? esc(leadRonda) : ""}${esc(pos.d)}</p>
+        <p class="lead">${leadOt ? esc(leadOt) : ""}${leadRonda ? esc(leadRonda) : ""}${leadLnb ? esc(leadLnb) : ""}${leadPlayoff ? esc(leadPlayoff) : ""}${esc(pos.d)}</p>
         ${regla}
     `, ops);
 }
@@ -1047,36 +1252,38 @@ function pantallaPartido() {
 function pantallaOff() {
     const c = state.carrera;
     const ofertas = `<button class="btn" data-mc="ofertas">Ver ofertas · media ${grlCarrera()}</button>`;
-    if (c.jugados.length > 0) {
-        const salto = c.jugados.indexOf("omitido") !== -1;
-        const lead = salto
-            ? "Saltaste el entrenamiento. Igual podés gastar el XP: cada punto del tablero sale " + COSTO_XP + " XP."
-            : "Ya entrenaste esta pretemporada. Cada punto del tablero sale " + COSTO_XP + " XP. Después mirá las ofertas.";
-        return marcoCarrera("PRETEMPORADA", `
-            ${tableroCarrera(true)}
-            <h1>ENTRENO<br><span>LISTO</span></h1>
-            <p class="lead">${esc(lead)}</p>
-        `, ofertas);
-    }
-    if (c.espera && ENTRENO_CARRERA[c.espera]) {
+    const juegos = asegurarMinijuegosTemporada();
+    const jugados = c.jugados || [];
+    if (c.espera && ENTRENO_CARRERA[c.espera] && jugados.indexOf(c.espera) === -1) {
         const ent = ENTRENO_CARRERA[c.espera];
-        return marcoCarrera("PRETEMPORADA", `
+        return marcoCarrera("ENTRENAR", `
             ${tableroCarrera(true)}
             <h1>SEGUÍ<br><span>EL ENTRENO</span></h1>
-            <p class="lead">Quedaste a mitad de ${esc(ent.titulo)}. ${esc(ent.detalle)}. Si ganás, esa habilidad sube 2. Si no llegás, no sube.</p>
+            <p class="lead">Quedaste a mitad de ${esc(ent.titulo)}. Si ganás, sumás ${XP_MINIJUEGO} XP. Esta temporada se juega una sola vez.</p>
         `, `<a class="btn" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}">Seguir<span class="sub">${esc(ent.titulo)}</span></a>
-            <button class="btn ghost" data-mc="omitir">Omitir este entreno</button>
+            <button class="btn ghost" data-mc="omitir">Dejarlo para después</button>
             ${ofertas}`);
     }
     const lista = Object.keys(ENTRENO_CARRERA).map((id) => {
         const ent = ENTRENO_CARRERA[id];
-        return `<a class="opcion" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}"><strong>${esc(ent.titulo)}</strong><span>${esc(ent.detalle)}</span></a>`;
+        const habilitado = juegos.indexOf(id) !== -1;
+        if (!habilitado) {
+            return `<div class="opcion mini bloqueado"><strong>${esc(ent.titulo)}</strong><span>No está esta temporada</span></div>`;
+        }
+        if (jugados.indexOf(id) !== -1) {
+            return `<div class="opcion mini bloqueado jugado"><strong>${esc(ent.titulo)}</strong><span>Ya lo jugaste esta temporada</span></div>`;
+        }
+        return `<a class="opcion mini" data-juego="${esc(ent.juego)}" data-modo="carrera" href="${esc(linkJuego(ent.juego, "carrera"))}"><strong>${esc(ent.titulo)}</strong><span>${XP_MINIJUEGO} XP si ganás</span></a>`;
     }).join("");
-    return marcoCarrera("PRETEMPORADA", `
-        ${tableroCarrera(true)}
+    const quedan = juegos.filter((id) => jugados.indexOf(id) === -1).length;
+    const lead = quedan
+        ? "Hay 3 minijuegos habilitados, sorteados al azar. Si ganás, sumás " + XP_MINIJUEGO + " XP y lo podés gastar entero."
+        : "Ya jugaste los 3 minijuegos de esta temporada. El XP que juntaste lo podés gastar en las estadísticas.";
+    return marcoCarrera("ENTRENAR", `
         <h1>ENTRENAR</h1>
-        <p class="lead">Elegí el minijuego de esta pretemporada. Si ganás, esa habilidad sube 2. Si no llegás, no sube.</p>
-        <div class="opciones">${lista}</div>
+        <p class="lead">${esc(lead)}</p>
+        <div class="opciones minis">${lista}</div>
+        ${tableroCarrera(true)}
     `, ofertas);
 }
 
@@ -1086,13 +1293,20 @@ function pantallaOfertasCarrera() {
     const botones = lista.map((club) =>
         `<button class="btn" data-mc="firma" data-club="${club.id}">${esc(club.nombre)}<span class="sub">${esc(club.liga)} · pide ${club.minima}</span></button>`
     ).join("");
-    const vacio = lista.length ? "" : `<p class="lead">Nadie llega a tu media ${grlCarrera()}. Entrená y volvé. La NBA abre en 78.</p>`;
+    const vacio = lista.length
+        ? ""
+        : (eq && eq.liga === "LNB"
+            ? `<p class="lead">Este año la NBA no llamó. Desde una media de 75 la chance es del ${CHANCE_OFERTA_NBA_ALTA}%.</p>`
+            : `<p class="lead">Nadie llega a tu media ${grlCarrera()}. Entrená y volvé. La NBA abre en 78.</p>`);
     const retiro = (state.edad || 0) >= 33 ? `<button class="btn ghost" data-mc="jubilar">Retirarme</button>` : "";
     const quedar = eq ? `<button class="btn ghost" data-mc="quedar">Quedarme en ${esc(eq.nombre)}</button>` : "";
+    const avisoNba = eq && eq.liga === "LNB"
+        ? " Desde una media de 75, una oferta de la NBA tiene altas chances."
+        : "";
     return marcoCarrera("MERCADO", `
         ${tableroCarrera(false)}
         <h1>OFERTAS</h1>
-        <p class="lead">Tu media es ${grlCarrera()}. ${eq && eq.liga === "NBA" ? "En la NBA ya no se vuelve a la liga local." : "Podés subir de liga si el club te da el mínimo."}</p>
+        <p class="lead">Tu media es ${grlCarrera()}. ${eq && eq.liga === "NBA" ? "En la NBA ya no se vuelve a la liga local." : "Podés subir de liga si el club te da el mínimo."}${avisoNba}</p>
         ${vacio}
     `, `${botones}${quedar}${retiro}`);
 }
@@ -1144,6 +1358,7 @@ function pantallaModoCarrera() {
     }
     if (c.paso === "portada") return pantallaPortada();
     if (c.paso === "draft") return pantallaDraft();
+    if (c.paso === "lnb" || c.paso === "lnbplayoff") return pantallaPartido();
     if (c.paso === "debut") {
         const actual = eventoActualCarrera();
         if (actual.ev && actual.ev.partido) return pantallaPartido();
@@ -1185,6 +1400,10 @@ function empezarCarrera() {
     if (!eq) {
         c.paso = "draft";
         c.draftListo = false;
+        return;
+    }
+    if (eq.liga === "LNB") {
+        prepararTemporadaLnb();
         return;
     }
     if (!c.localHecha && eq.liga !== "NBA") {
@@ -1232,29 +1451,28 @@ function sortearClub() {
 
 function cobrarEntrenoCarrera(gano, juego) {
     const c = asegurarCarrera();
-    const mapa = {
-        memoria: "tiro",
-        simon: "pase",
-        defensa: "defensa",
-        reflejos: "velocidad",
-        tiro: "tiro",
-        pase: "pase",
-        dribling: "velocidad"
-    };
-    const clave = mapa[juego];
-    const sube = clave ? subirCampo(clave, gano ? 2 : 0) : 0;
-    const xp = gano ? 12 : 6;
+    const habilitados = asegurarMinijuegosTemporada();
+    if (habilitados.indexOf(juego) === -1) {
+        state.flash = "Ese minijuego no está habilitado esta temporada.";
+        c.paso = "offentreno";
+        state.esperando = null;
+        state.fase = "modocarrera";
+        persistir();
+        return;
+    }
+    const ya = !juego || c.jugados.indexOf(juego) !== -1;
+    if (juego && !ya) c.jugados.push(juego);
+    const xp = gano && !ya ? XP_MINIJUEGO : 0;
     c.xp += xp;
-    if (juego && c.jugados.indexOf(juego) === -1) c.jugados.push(juego);
     c.espera = null;
     c.ofertaEntreno = null;
     c.paso = "offentreno";
     state.esperando = null;
     state.fase = "modocarrera";
-    reflejarCalibre();
     const nombre = ENTRENO_CARRERA[juego] ? ENTRENO_CARRERA[juego].titulo : "Entrenamiento";
-    const stat = clave && sube ? nombreStat(clave) + " +" + sube + ". " : (gano && clave ? "Esa habilidad ya está en 99. " : "");
-    state.flash = nombre + ": " + (gano ? "victoria" : "sin subida") + ". " + stat + "Calibre " + (state.calibre || 46) + ". +" + xp + " XP.";
+    state.flash = ya
+        ? nombre + " ya estaba jugado esta temporada."
+        : (nombre + ": " + (gano ? "victoria. +" + XP_MINIJUEGO + " XP." : "sin victoria. Esta temporada no se repite."));
     persistir();
 }
 
@@ -1270,11 +1488,25 @@ function ligarModoCarrera(raiz) {
                 return;
             }
             if (acc === "debut") {
-                c.paso = "debut";
-                c.momento = 0;
-                c.evento = null;
-                c.partido = null;
+                if (enLigaNacional()) prepararTemporadaLnb();
+                else {
+                    c.paso = "debut";
+                    c.momento = 0;
+                    c.evento = null;
+                    c.partido = null;
+                }
                 state.flash = "";
+            }
+            if (acc === "seguir-lnb") {
+                c.localHecha = true;
+                if (c.sorteoNba) c.sorteoNba = Object.assign({}, c.sorteoNba, { llega: false, ids: [] });
+                limpiarEntreno();
+                c.paso = "offentreno";
+                c.anioNuevo = false;
+                state.flash = "Seguís en la Liga Nacional.";
+                persistir();
+                render();
+                return;
             }
             if (acc === "ofertas") {
                 c.paso = "ofertas";
@@ -1283,8 +1515,7 @@ function ligarModoCarrera(raiz) {
             if (acc === "omitir") {
                 c.espera = null;
                 c.ofertaEntreno = null;
-                if (c.jugados.indexOf("omitido") === -1) c.jugados.push("omitido");
-                state.flash = "Entrenamiento omitido.";
+                state.flash = "Lo dejás para después. Sigue disponible esta temporada.";
             }
             if (acc === "seguir") seguirResultado();
             if (acc === "quedar") {
@@ -1352,10 +1583,10 @@ function ligarModoCarrera(raiz) {
                 anotarClub(club, acc === "pick" ? "DRAFT" : "FICHAJE");
                 if (acc === "pick") {
                     c.localHecha = true;
-                    state.temporada = 1;
+                    state.temporada = Math.max(1, Number(state.temporada) || 1);
                     c.momento = 0;
                     c.usados = [];
-                    c.jugados = [];
+                    limpiarEntreno();
                     state.hinchada = 60;
                     state.quimica = 60;
                     guardarPaso("temporada", "Drafteado por " + club.nombre, "Arranca la temporada en la NBA.", "bien");
@@ -1375,6 +1606,8 @@ function ligarModoCarrera(raiz) {
                 const delta = Number(nodo.dataset.d);
                 const campo = campoStat(clave);
                 const actual = Number(state.stats[campo]) || 50;
+                const cuerpo = document.querySelector("#app .body");
+                const scroll = cuerpo ? cuerpo.scrollTop : 0;
                 if (delta > 0) {
                     if (c.xp < COSTO_XP) {
                         state.flash = "Te faltan XP. Cada punto sale " + COSTO_XP + ".";
@@ -1396,6 +1629,13 @@ function ligarModoCarrera(raiz) {
                         state.flash = nombreStat(clave) + " -1. +" + COSTO_XP + " XP.";
                     }
                 }
+                persistir();
+                render();
+                const nuevo = document.querySelector("#app .body");
+                const fila = nuevo && nuevo.querySelector('[data-mc="stat"][data-stat="' + clave + '"]');
+                if (fila) fila.scrollIntoView({ block: "center", inline: "nearest" });
+                else if (nuevo) nuevo.scrollTop = scroll;
+                return;
             }
             persistir();
             render();

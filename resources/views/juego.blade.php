@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/retro.css?v=30">
+    <link rel="stylesheet" href="/css/retro.css?v=32">
 </head>
 <body>
     <div id="app"></div>
-    <script src="/js/carrera.js?v=17"></script>
-    <script src="/js/app.js?v=37"></script>
+    <script src="/js/carrera.js?v=22"></script>
+    <script src="/js/app.js?v=39"></script>
 </body>
 </html>

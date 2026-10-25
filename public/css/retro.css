@@ -195,7 +195,7 @@ a.opcion { display: flex; flex-direction: column; justify-content: center; text-
     max-width: 100%;
     font-size: 8px;
     line-height: 1.45;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     white-space: normal;
 }
 
@@ -937,6 +937,49 @@ button, input, select, textarea { touch-action: manipulation; }
 
 #app .opcion.bloqueado {
     opacity: 0.45;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+#app .opciones.minis {
+    flex-shrink: 0;
+    min-height: auto;
+    align-content: start;
+    grid-template-columns: 1fr;
+}
+
+#app .opcion.mini {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 68px;
+    overflow: visible;
+    text-decoration: none;
+}
+
+#app .opcion.mini span {
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+#app .opcion.mini.bloqueado {
+    opacity: 1;
+    background: rgba(6, 12, 28, 0.82);
+    border-color: rgba(208, 208, 208, 0.35);
+    box-shadow: none;
+}
+
+#app .opcion.mini.bloqueado strong {
+    color: rgba(244, 247, 255, 0.55);
+}
+
+#app .opcion.mini.bloqueado span {
+    color: rgba(213, 216, 224, 0.72);
+}
+
+#app .opcion.mini.jugado {
+    border-style: dashed;
 }
 
 #app .campo.malo {

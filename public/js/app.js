@@ -329,6 +329,32 @@ function salario() {
     return salarioValor().toFixed(1);
 }
 
+const PARES_NOMBRE = {
+    "├¡": "í",
+    "├║": "ú",
+    "├│": "ó",
+    "├▒": "ñ",
+    "├í": "á",
+    "├®": "é",
+    "├ü": "Á"
+};
+
+function repararTexto(valor) {
+    if (typeof valor !== "string" || valor.indexOf("├") === -1) return valor;
+    return valor.replace(/├./g, (par) => PARES_NOMBRE[par] || par);
+}
+
+function repararDatos(valor) {
+    if (typeof valor === "string") return repararTexto(valor);
+    if (Array.isArray(valor)) return valor.map(repararDatos);
+    if (valor && typeof valor === "object") {
+        Object.keys(valor).forEach((clave) => {
+            valor[clave] = repararDatos(valor[clave]);
+        });
+    }
+    return valor;
+}
+
 function guardarLocal() {
     localStorage.setItem("rookie-jugador", JSON.stringify(state));
 }
@@ -339,7 +365,7 @@ function cargarLocal() {
         if (!guardado || !guardado.nombre) return;
         const fasesJuego = ["carrera", "retiro", "ficha", "hub", "lobby", "entrenar", "ofertas", "cuenta", "manager", "mercado", "modocarrera"];
         if (fasesJuego.includes(guardado.fase)) {
-            state = Object.assign(estadoInicial(), guardado);
+            state = repararDatos(Object.assign(estadoInicial(), guardado));
         }
     } catch (error) {
         state = estadoInicial();
@@ -1034,16 +1060,8 @@ function sumarCalibre(n) {
 }
 
 function madurar() {
-    if (state.stats) {
-        ["velocidad", "tiro", "fuerza", "control", "defensa"].forEach((campo) => {
-            const actual = Number(state.stats[campo]) || 0;
-            if (actual < 99) state.stats[campo] = Math.min(99, actual + 2);
-        });
-    }
-    const cal = Number(state.calibre) || 46;
-    if (cal < 99) state.calibre = Math.min(99, cal + 2);
     if (typeof reflejarCalibre === "function") reflejarCalibre();
-    return "Cumpliste un año. Las habilidades suman.";
+    return "Cumpliste un año.";
 }
 
 function textoTope() {
@@ -2374,7 +2392,7 @@ async function abrirJugador(id, destino) {
 function aplicarFicha(ficha) {
     const cuenta = state.cuenta;
     const flash = state.flash;
-    state = Object.assign(estadoInicial(), ficha || {});
+    state = repararDatos(Object.assign(estadoInicial(), ficha || {}));
     state.cuenta = cuenta || { google: false, user: null, jugadores: [] };
     state.flash = flash || "";
     if (state.retirado) state.fase = "retiro";
@@ -2496,7 +2514,7 @@ async function arrancar() {
         equipos = [];
         state.error = "No pude leer los clubes. Volvé a intentar.";
     } else {
-        equipos = res.datos;
+        equipos = repararDatos(res.datos);
     }
     estrellas = mercado && Array.isArray(mercado.datos) ? mercado.datos : [];
     if (!state.cuenta || !state.cuenta.user) {
